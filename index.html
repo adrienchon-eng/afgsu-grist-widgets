@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AFGSU Manager - Widget Fonctions</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #0f766e;
+      --primary-2: #134e4a;
+      --warn: #b45309;
+      --warn-bg: #fff7ed;
+      --ok: #166534;
+      --ok-bg: #f0fdf4;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .badge.zero {
+      background: var(--ok);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fcfcfd;
+    }
+
+    .stat .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat .value {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .alert-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .empty {
+      padding: 18px;
+      border-radius: 12px;
+      background: var(--ok-bg);
+      color: var(--ok);
+      border: 1px solid #bbf7d0;
+    }
+
+    .card {
+      border: 1px solid #fed7aa;
+      background: var(--warn-bg);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .card.done {
+      background: var(--ok-bg);
+      border-color: #bbf7d0;
+      opacity: 0.85;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      flex-wrap: wrap;
+    }
+
+    .person {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .function-pill {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(180, 83, 9, 0.12);
+      color: var(--warn);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .card.done .function-pill {
+      background: rgba(22, 101, 52, 0.12);
+      color: var(--ok);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .edit-row {
+      display: none;
+      margin-top: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .edit-row.show {
+      display: flex;
+    }
+
+    input[type="text"] {
+      flex: 1 1 240px;
+      min-width: 220px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+    }
+
+    .log {
+      max-height: 180px;
+      overflow: auto;
+      padding: 12px;
+      background: #0f172a;
+      color: #cbd5e1;
+      border-radius: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="panel">
+      <div class="header">
+        <div class="title">
+          <div class="badge zero" id="badge">0</div>
+          <div>
+            <h1>Contrôle des nouvelles fonctions</h1>
+            <p class="subtitle">
+              Le widget surveille les inscriptions, ajoute les nouvelles fonctions, puis crée une alerte de vérification.
+            </p>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn-primary" id="scanBtn">Relancer le scan</button>
+          <button class="btn-secondary" id="refreshBtn">Rafraîchir l’affichage</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Demandes détectées</div>
+          <div class="value" id="statDetected">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Fonctions ajoutées</div>
+          <div class="value" id="statAdded">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Doublons évités</div>
+          <div class="value" id="statDuplicates">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Alertes à valider</div>
+          <div class="value" id="statPending">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="hint">
+        Colonnes attendues dans <strong>Stagiaires</strong> : <strong>Nom</strong>, <strong>Prenom</strong>, <strong>Fonction</strong>, <strong>Autre_Fonction</strong>. Table de référence : <strong>Fonctions</strong>, colonne <strong>Fonctions</strong>.
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="alert-list" id="alertList">
+        <div class="empty">Aucune alerte en attente.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="log" id="log">Widget prêt.\n</div>
+    </section>
+  </div>
+
+  <script>
+    grist.ready({ requiredAccess: 'full' });
+
+    const state = {
+      alerts: [],
+      processedIds: new Set(),
+      counters: {
+        detected: 0,
+        added: 0,
+        duplicates: 0
+      },
+      liveRecords: []
+    };
+
+    const els = {
+      badge: document.getElementById('badge'),
+      alertList: document.getElementById('alertList'),
+      log: document.getElementById('log'),
+      statDetected: document.getElementById('statDetected'),
+      statAdded: document.getElementById('statAdded'),
+      statDuplicates: document.getElementById('statDuplicates'),
+      statPending: document.getElementById('statPending'),
+      scanBtn: document.getElementById('scanBtn'),
+      refreshBtn: document.getElementById('refreshBtn')
+    };
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString('fr-FR');
+      els.log.textContent += `[${time}] ${message}\n`;
+      els.log.scrollTop = els.log.scrollHeight;
+    }
+
+    function normalize(value) {
+      return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toUpperCase();
+    }
+
+    function renderStats() {
+      const pending = state.alerts.filter(a => !a.validated).length;
+      els.statDetected.textContent = state.counters.detected;
+      els.statAdded.textContent = state.counters.added;
+      els.statDuplicates.textContent = state.counters.duplicates;
+      els.statPending.textContent = pending;
+      els.badge.textContent = pending;
+      els.badge.className = pending === 0 ? 'badge zero' : 'badge';
+    }
+
+    function renderAlerts() {
+      const items = state.alerts.slice().reverse();
+
+      if (!items.length) {
+        els.alertList.innerHTML = '<div class="empty">Aucune alerte en attente.</div>';
+        renderStats();
+        return;
+      }
+
+      els.alertList.innerHTML = items.map((item, idx) => {
+        const realIndex = state.alerts.length - 1 - idx;
+        const fullName = [item.nom, item.prenom].filter(Boolean).join(' ').trim() || `Stagiaire #${item.stagiaireId}`;
+        return `
+          <article class="card ${item.validated ? 'done' : ''}">
+            <div class="card-top">
+              <div>
+                <div class="person">${escapeHtml(fullName)}</div>
+                <div class="meta">Stagiaire ID ${item.stagiaireId} · Fonction record ID ${item.functionRecordId}</div>
+                <div class="function-pill">${item.isNew ? 'Nouvelle entrée' : 'Fonction déjà existante'} : ${escapeHtml(item.value)}</div>
+              </div>
+            </div>
+
+            ${item.validated ? '<div class="meta" style="margin-top:10px;color:#166534;font-weight:600;">Alerte validée.</div>' : ''}
+
+            ${!item.validated ? `
+              <div class="actions">
+                <button class="btn-primary" onclick="validateAlert(${realIndex})">Valider</button>
+                <button class="btn-ghost" onclick="toggleEdit(${realIndex})">Corriger</button>
+                <button class="btn-danger" onclick="rejectAlert(${realIndex})">Rejeter</button>
+              </div>
+              <div class="edit-row" id="edit-${realIndex}">
+                <input type="text" id="input-${realIndex}" value="${escapeAttr(item.value)}" />
+                <button class="btn-secondary" onclick="applyCorrection(${realIndex})">Appliquer</button>
+              </div>
+            ` : ''}
+          </article>
+        `;
+      }).join('');
+
+      renderStats();
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str);
+    }
+
+    function addAlert(data) {
+      state.alerts.push({
+        ...data,
+        validated: false
+      });
+      renderAlerts();
+    }
+
+    async function fetchFunctionsMap() {
+      const table = await grist.docApi.fetchTable('Fonctions');
+      const map = new Map();
+
+      (table.id || []).forEach((id, index) => {
+        const raw = (table.Fonctions || [])[index];
+        const norm = normalize(raw);
+        if (norm) map.set(norm, id);
+      });
+
+      return map;
+    }
+
+    async function processRecord(record) {
+      const other = normalize(record.Autre_Fonction);
+      if (!other) return;
+      if (state.processedIds.has(record.id)) return;
+
+      state.processedIds.add(record.id);
+      state.counters.detected += 1;
+
+      log(`Analyse du stagiaire ${record.id} avec Autre_Fonction="${other}"`);
+
+      const functionMap = await fetchFunctionsMap();
+      let functionRecordId = functionMap.get(other);
+      let isNew = false;
+
+      if (!functionRecordId) {
+        const result = await grist.docApi.applyUserActions([
+          ['AddRecord', 'Fonctions', null, { Fonctions: other }]
+        ]);
+        functionRecordId = result?.retValues?.[0];
+        isNew = true;
+        state.counters.added += 1;
+        log(`Fonction ajoutée dans "Fonctions" : ${other} (record ${functionRecordId})`);
+      } else {
+        state.counters.duplicates += 1;
+        log(`Fonction déjà présente, aucun doublon créé : ${other} (record ${functionRecordId})`);
+      }
+
+      await grist.docApi.applyUserActions([
+        ['UpdateRecord', 'Stagiaires', record.id, { Fonction: functionRecordId }],
+        ['UpdateRecord', 'Stagiaires', record.id, { Autre_Fonction: '' }]
+      ]);
+
+      log(`Stagiaire ${record.id} mis à jour : Fonction=${functionRecordId}, Autre_Fonction vidé`);
+
+      addAlert({
+        stagiaireId: record.id,
+        nom: record.Nom || '',
+        prenom: record.Prenom || '',
+        value: other,
+        functionRecordId,
+        isNew
+      });
+    }
+
+    async function runScan(records = null) {
+      try {
+        const rows = records || state.liveRecords || [];
+        for (const record of rows) {
+          await processRecord(record);
+        }
+        renderAlerts();
+      } catch (error) {
+        log(`Erreur pendant le scan : ${error.message}`);
+      }
+    }
+
+    function toggleEdit(index) {
+      const node = document.getElementById(`edit-${index}`);
+      if (node) node.classList.toggle('show');
+    }
+
+    async function validateAlert(index) {
+      state.alerts[index].validated = true;
+      log(`Alerte validée pour "${state.alerts[index].value}"`);
+      renderAlerts();
+    }
+
+    async function applyCorrection(index) {
+      try {
+        const input = document.getElementById(`input-${index}`);
+        const newValue = normalize(input.value);
+        if (!newValue) return;
+
+        const alert = state.alerts[index];
+        const functionMap = await fetchFunctionsMap();
+
+        const existingId = functionMap.get(newValue);
+
+        if (existingId && existingId !== alert.functionRecordId) {
+          await grist.docApi.applyUserActions([
+            ['UpdateRecord', 'Stagiaires', alert.stagiaireId, { Fonction: existingId }],
+            ['RemoveRecord', 'Fonctions', alert.functionRecordId]
+          ]);
+          alert.functionRecordId = existingId;
+          log(`Correction fusionnée avec une fonction existante : ${newValue} (record ${existingId})`);
+        } else {
+          await grist.docApi.applyUserActions([
+            ['UpdateRecord', 'Fonctions', alert.functionRecordId, { Fonctions: newValue }]
+          ]);
+          log(`Fonction corrigée : ${alert.value} -> ${newValue}`);
+          alert.functionRecordId = alert.functionRecordId;
+        }
+
+        alert.value = newValue;
+        alert.validated = true;
+        renderAlerts();
+      } catch (error) {
+        log(`Erreur lors de la correction : ${error.message}`);
+      }
+    }
+
+    async function rejectAlert(index) {
+      try {
+        const alert = state.alerts[index];
+
+        await grist.docApi.applyUserActions([
+          ['UpdateRecord', 'Stagiaires', alert.stagiaireId, { Fonction: null }],
+          ['RemoveRecord', 'Fonctions', alert.functionRecordId]
+        ]);
+
+        log(`Fonction rejetée et supprimée : ${alert.value}`);
+        state.alerts.splice(index, 1);
+        renderAlerts();
+      } catch (error) {
+        log(`Erreur lors du rejet : ${error.message}`);
+      }
+    }
+
+    window.toggleEdit = toggleEdit;
+    window.validateAlert = validateAlert;
+    window.applyCorrection = applyCorrection;
+    window.rejectAlert = rejectAlert;
+
+    els.scanBtn.addEventListener('click', async () => {
+      log('Relance manuelle du scan.');
+      await runScan();
+    });
+
+    els.refreshBtn.addEventListener('click', () => {
+      renderAlerts();
+      log('Affichage rafraîchi.');
+    });
+
+    grist.onRecords(async (records) => {
+      state.liveRecords = records || [];
+      log(`Synchronisation reçue : ${state.liveRecords.length} lignes.`);
+      await runScan(state.liveRecords);
+    });
+
+    renderAlerts();
+    renderStats();
+  </script>
+</body>
+</html>
