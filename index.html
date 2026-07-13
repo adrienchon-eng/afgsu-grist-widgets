@@ -403,7 +403,7 @@
                 <button class="btn-danger" onclick="rejectAlert(${realIndex})">Rejeter</button>
               </div>
               <div class="edit-row" id="edit-${realIndex}">
-                <input type="text" id="input-${realIndex}" value="${escapeAttr(item.value)}" />
+                <input type="text" id="input-${realIndex}" value="${escapeAttr(item.value)}" list="fonctions-list" autocomplete="off" placeholder="Rechercher une fonction existante..." style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;" /><datalist id="fonctions-list">${state.allFonctions.map(f=>`<option value="${escapeAttr(f)}"></option>`).join('')}</datalist>
                 <button class="btn-secondary" onclick="applyCorrection(${realIndex})">Appliquer</button>
               </div>
             ` : ''}
@@ -436,13 +436,13 @@
     }
 
     async function fetchFunctionsMap() {
-      const table = await grist.docApi.fetchTable('Fonctions');
+      state.allFonctions = []; const table = await grist.docApi.fetchTable('Fonctions');
       const map = new Map();
 
       (table.id || []).forEach((id, index) => {
         const norm = ((table.Fonction_Normalisee || [])[index] || '').trim().toUpperCase();
         
-        if (norm) map.set(norm, id);
+        if (norm) { map.set(norm, id); state.allFonctions.push((table.Fonctions || [])[index] || norm); }
       });
 
       return map;
