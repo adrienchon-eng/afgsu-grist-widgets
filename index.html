@@ -440,8 +440,8 @@
       const map = new Map();
 
       (table.id || []).forEach((id, index) => {
-        const raw = (table.Fonctions || [])[index];
-        const norm = normalize(raw);
+        const norm = ((table.Fonction_Normalisee || [])[index] || '').trim().toUpperCase();
+        
         if (norm) map.set(norm, id);
       });
 
