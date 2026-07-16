@@ -21,9 +21,7 @@
       letter-spacing: 0.05em;
       margin-bottom: 12px;
     }
-    .field {
-      margin-bottom: 14px;
-    }
+    .field { margin-bottom: 14px; }
     label {
       display: block;
       font-size: 13px;
@@ -40,9 +38,6 @@
       font-size: 14px;
       color: #1f2937;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
       cursor: pointer;
     }
     select:focus {
@@ -109,13 +104,14 @@
       <span class="badge" id="badge-unite"></span>
     </div>
     <div class="saved" id="msg-saved">Unite enregistree avec succes.</div>
-    <div class="error" id="msg-error"></div>
+    <div class="error" id="msg-error">Erreur lors de l'enregistrement.</div>
   </div>
 
   <script>
     // Donnees chargees depuis Grist
     let allStructures = [];
     let currentRowId = null;
+    let dataLoaded = false;
 
     const selCat = document.getElementById('sel-cat');
     const selSous = document.getElementById('sel-sous');
@@ -131,7 +127,6 @@
       setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
 
-    // Remplir le select Categorie
     function buildCategories() {
       const cats = [...new Set(allStructures.map(s => s.Categorie).filter(Boolean))].sort();
       selCat.innerHTML = '<option value="">-- Choisir une categorie --</option>';
@@ -142,7 +137,6 @@
       });
     }
 
-    // Filtrer sous-categories selon la categorie
     function buildSousCategories(cat) {
       const sousSet = [...new Set(
         allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean)
@@ -160,7 +154,6 @@
       badgeUnite.textContent = '';
     }
 
-    // Filtrer unites selon cat + sous-cat
     function buildUnites(cat, sousCat) {
       const unites = allStructures.filter(
         s => s.Categorie === cat && s.Sous_Categorie === sousCat
@@ -175,7 +168,6 @@
       badgeUnite.textContent = unites.length + ' unites';
     }
 
-    // Evenements en cascade
     selCat.addEventListener('change', () => {
       const cat = selCat.value;
       if (!cat) {
@@ -205,10 +197,9 @@
       const uniteId = parseInt(selUnite.value);
       if (!uniteId || !currentRowId) return;
       try {
-        await grist.setSelectedRows([currentRowId]);
         await grist.docApi.applyUserActions([[
           'UpdateRecord', 'Stagiaires', currentRowId,
-          { Unite: uniteId, Categorie_Unite: selCat.value, Sous_Categorie_Unite: selSous.value }
+          { Unite: uniteId }
         ]]);
         showMsg(msgSaved);
       } catch(e) {
@@ -216,11 +207,7 @@
       }
     });
 
-    // Init Grist
-    grist.ready({ requiredAccess: 'full', columns: ['Unite', 'Categorie_Unite', 'Sous_Categorie_Unite'] });
-
-    // Charger toutes les structures depuis la table Structures
-    grist.onReady(async () => {
+    async function loadData() {
       try {
         const table = await grist.docApi.fetchTable('Structures');
         const ids = table.id;
@@ -233,29 +220,43 @@
         buildCategories();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'block';
+        dataLoaded = true;
       } catch(e) {
         document.getElementById('loading').textContent = 'Erreur chargement: ' + e.message;
       }
+    }
+
+    grist.ready({
+      requiredAccess: 'full',
+      columns: [
+        { name: 'Unite', type: 'Ref:Structures', optional: false }
+      ]
     });
 
-    // Recevoir la ligne courante pour pre-remplir
-    grist.onRecord(record => {
+    grist.onRecord(function(record) {
       currentRowId = record.id;
-      if (record.Categorie_Unite) {
-        selCat.value = record.Categorie_Unite;
-        buildSousCategories(record.Categorie_Unite);
-        if (record.Sous_Categorie_Unite) {
-          // Sous_Categorie_Unite est une reference, on prend le nom via Structures
-          const struct = allStructures.find(s => s.id === record.Unite);
-          const sousCatNom = struct ? struct.Sous_Categorie : null;
-          if (sousCatNom) {
-            selSous.value = sousCatNom;
-            buildUnites(record.Categorie_Unite, sousCatNom);
-            selUnite.value = record.Unite;
-          }
+      if (!dataLoaded) return;
+      // Pre-fill based on current record
+      if (record.Unite) {
+        const struct = allStructures.find(s => s.id === record.Unite);
+        if (struct) {
+          selCat.value = struct.Categorie;
+          buildSousCategories(struct.Categorie);
+          selSous.value = struct.Sous_Categorie;
+          buildUnites(struct.Categorie, struct.Sous_Categorie);
+          selUnite.value = record.Unite;
         }
+      } else {
+        selCat.value = '';
+        selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
+        selSous.disabled = true;
+        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+        selUnite.disabled = true;
       }
     });
+
+    // Start loading data immediately
+    loadData();
   </script>
 </body>
 </html>
