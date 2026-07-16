@@ -7,81 +7,17 @@
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: #f6f7f9;
-      padding: 16px;
-      color: #1f2937;
-    }
-    h3 {
-      font-size: 13px;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-    }
+    body { font-family: Inter, system-ui, sans-serif; background: #f6f7f9; padding: 16px; color: #1f2937; }
+    h3 { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
     .field { margin-bottom: 14px; }
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 4px;
-    }
-    select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      background: #fff;
-      font-size: 14px;
-      color: #1f2937;
-      appearance: none;
-      cursor: pointer;
-    }
-    select:focus {
-      outline: none;
-      border-color: #0f766e;
-      box-shadow: 0 0 0 3px rgba(15,118,110,0.15);
-    }
-    select:disabled {
-      background-color: #f3f4f6;
-      color: #9ca3af;
-      cursor: not-allowed;
-    }
-    .badge {
-      display: inline-block;
-      margin-top: 4px;
-      font-size: 11px;
-      color: #6b7280;
-    }
-    .saved {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 6px;
-      font-size: 13px;
-      color: #166534;
-      display: none;
-    }
-    .error {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 6px;
-      font-size: 13px;
-      color: #991b1b;
-      display: none;
-    }
-    #loading {
-      text-align: center;
-      color: #6b7280;
-      font-size: 13px;
-      padding: 20px;
-    }
+    label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+    select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 14px; color: #1f2937; appearance: none; cursor: pointer; }
+    select:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,0.15); }
+    select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+    .badge { display: inline-block; margin-top: 4px; font-size: 11px; color: #6b7280; }
+    .saved { margin-top: 10px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534; display: none; }
+    .error { margin-top: 10px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b; display: none; }
+    #loading { text-align: center; color: #6b7280; font-size: 13px; padding: 20px; }
     #app { display: none; }
   </style>
 </head>
@@ -104,13 +40,13 @@
       <span class="badge" id="badge-unite"></span>
     </div>
     <div class="saved" id="msg-saved">Unite enregistree avec succes.</div>
-    <div class="error" id="msg-error">Erreur lors de l'enregistrement.</div>
+    <div class="error" id="msg-error">Erreur.</div>
   </div>
 
   <script>
-    // Donnees chargees depuis Grist
     let allStructures = [];
     let currentRowId = null;
+    let pendingRecord = null;
     let dataLoaded = false;
 
     const selCat = document.getElementById('sel-cat');
@@ -122,7 +58,7 @@
     const msgError = document.getElementById('msg-error');
 
     function showMsg(el, txt) {
-      el.textContent = txt || el.textContent;
+      if (txt) el.textContent = txt;
       el.style.display = 'block';
       setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
@@ -130,23 +66,13 @@
     function buildCategories() {
       const cats = [...new Set(allStructures.map(s => s.Categorie).filter(Boolean))].sort();
       selCat.innerHTML = '<option value="">-- Choisir une categorie --</option>';
-      cats.forEach(c => {
-        const o = document.createElement('option');
-        o.value = c; o.textContent = c;
-        selCat.appendChild(o);
-      });
+      cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selCat.appendChild(o); });
     }
 
     function buildSousCategories(cat) {
-      const sousSet = [...new Set(
-        allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean)
-      )].sort();
+      const sousSet = [...new Set(allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean))].sort();
       selSous.innerHTML = '<option value="">-- Choisir une sous-categorie --</option>';
-      sousSet.forEach(sc => {
-        const o = document.createElement('option');
-        o.value = sc; o.textContent = sc;
-        selSous.appendChild(o);
-      });
+      sousSet.forEach(sc => { const o = document.createElement('option'); o.value = sc; o.textContent = sc; selSous.appendChild(o); });
       selSous.disabled = false;
       selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
       selUnite.disabled = true;
@@ -155,88 +81,15 @@
     }
 
     function buildUnites(cat, sousCat) {
-      const unites = allStructures.filter(
-        s => s.Categorie === cat && s.Sous_Categorie === sousCat
-      ).sort((a, b) => a.Nom.localeCompare(b.Nom));
+      const unites = allStructures.filter(s => s.Categorie === cat && s.Sous_Categorie === sousCat).sort((a, b) => a.Nom.localeCompare(b.Nom));
       selUnite.innerHTML = '<option value="">-- Choisir une unite --</option>';
-      unites.forEach(u => {
-        const o = document.createElement('option');
-        o.value = u.id; o.textContent = u.Nom;
-        selUnite.appendChild(o);
-      });
+      unites.forEach(u => { const o = document.createElement('option'); o.value = u.id; o.textContent = u.Nom; selUnite.appendChild(o); });
       selUnite.disabled = false;
       badgeUnite.textContent = unites.length + ' unites';
     }
 
-    selCat.addEventListener('change', () => {
-      const cat = selCat.value;
-      if (!cat) {
-        selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
-        selSous.disabled = true;
-        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
-        selUnite.disabled = true;
-        badgeSous.textContent = ''; badgeUnite.textContent = '';
-        return;
-      }
-      buildSousCategories(cat);
-    });
-
-    selSous.addEventListener('change', () => {
-      const cat = selCat.value;
-      const sous = selSous.value;
-      if (!sous) {
-        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
-        selUnite.disabled = true;
-        badgeUnite.textContent = '';
-        return;
-      }
-      buildUnites(cat, sous);
-    });
-
-    selUnite.addEventListener('change', async () => {
-      const uniteId = parseInt(selUnite.value);
-      if (!uniteId || !currentRowId) return;
-      try {
-        await grist.docApi.applyUserActions([[
-          'UpdateRecord', 'Stagiaires', currentRowId,
-          { Unite: uniteId }
-        ]]);
-        showMsg(msgSaved);
-      } catch(e) {
-        showMsg(msgError, 'Erreur: ' + e.message);
-      }
-    });
-
-    async function loadData() {
-      try {
-        const table = await grist.docApi.fetchTable('Structures');
-        const ids = table.id;
-        const noms = table.Nom;
-        const cats = table.Categorie;
-        const sousCats = table.Sous_Categorie;
-        allStructures = ids.map((id, i) => ({
-          id, Nom: noms[i], Categorie: cats[i], Sous_Categorie: sousCats[i]
-        })).filter(s => s.Nom);
-        buildCategories();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        dataLoaded = true;
-      } catch(e) {
-        document.getElementById('loading').textContent = 'Erreur chargement: ' + e.message;
-      }
-    }
-
-    grist.ready({
-      requiredAccess: 'full',
-      columns: [
-        { name: 'Unite', type: 'Ref:Structures', optional: false }
-      ]
-    });
-
-    grist.onRecord(function(record) {
-      currentRowId = record.id;
-      if (!dataLoaded) return;
-      // Pre-fill based on current record
+    function prefillFromRecord(record) {
+      if (!record || !dataLoaded) return;
       if (record.Unite) {
         const struct = allStructures.find(s => s.id === record.Unite);
         if (struct) {
@@ -253,10 +106,64 @@
         selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
         selUnite.disabled = true;
       }
+    }
+
+    selCat.addEventListener('change', () => {
+      const cat = selCat.value;
+      if (!cat) {
+        selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>'; selSous.disabled = true;
+        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>'; selUnite.disabled = true;
+        badgeSous.textContent = ''; badgeUnite.textContent = '';
+        return;
+      }
+      buildSousCategories(cat);
     });
 
-    // Start loading data immediately
-    loadData();
+    selSous.addEventListener('change', () => {
+      const sous = selSous.value;
+      if (!sous) {
+        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>'; selUnite.disabled = true;
+        badgeUnite.textContent = ''; return;
+      }
+      buildUnites(selCat.value, sous);
+    });
+
+    selUnite.addEventListener('change', async () => {
+      const uniteId = parseInt(selUnite.value);
+      if (!uniteId || !currentRowId) return;
+      try {
+        await grist.docApi.applyUserActions([['UpdateRecord', 'Stagiaires', currentRowId, { Unite: uniteId }]]);
+        showMsg(msgSaved);
+      } catch(e) { showMsg(msgError, 'Erreur: ' + e.message); }
+    });
+
+    async function loadData() {
+      try {
+        const table = await grist.docApi.fetchTable('Structures');
+        allStructures = table.id.map((id, i) => ({
+          id, Nom: table.Nom[i], Categorie: table.Categorie[i], Sous_Categorie: table.Sous_Categorie[i]
+        })).filter(s => s.Nom);
+        buildCategories();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        dataLoaded = true;
+        if (pendingRecord) { prefillFromRecord(pendingRecord); pendingRecord = null; }
+      } catch(e) {
+        document.getElementById('loading').textContent = 'Erreur: ' + e.message;
+      }
+    }
+
+    grist.ready({ requiredAccess: 'full' });
+
+    grist.onRecord(function(record) {
+      currentRowId = record.id;
+      if (!dataLoaded) {
+        pendingRecord = record;
+        if (allStructures.length === 0) loadData();
+      } else {
+        prefillFromRecord(record);
+      }
+    });
   </script>
 </body>
 </html>
