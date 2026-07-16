@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Entonnoir Unite",
+    "description": "Widget de selection en cascade a 3 niveaux (Categorie > Sous-categorie > Unite) pour l'affectation d'unite d'un stagiaire dans AFGSU MANAGER.",
+    "url": "https://adrienchon-eng.github.io/afgsu-grist-widgets/entonnoir.html"
+  },
+  {
+    "name": "Index des fonctions",
+    "description": "Widget d'autocompletion pour les fonctions existantes dans le champ Categorie/Fonction des stagiaires.",
+    "url": "https://adrienchon-eng.github.io/afgsu-grist-widgets/index.html"
+  }
+]
