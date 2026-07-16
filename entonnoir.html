@@ -43,127 +43,164 @@
     <div class="error" id="msg-error">Erreur.</div>
   </div>
 
-  <script>
-    let allStructures = [];
-    let currentRowId = null;
-    let pendingRecord = null;
-    let dataLoaded = false;
+<script>
+  let allStructures = [];
+  let currentRowId = null;
+  let pendingRecord = null;
+  let dataLoaded = false;
 
-    const selCat = document.getElementById('sel-cat');
-    const selSous = document.getElementById('sel-sous');
-    const selUnite = document.getElementById('sel-unite');
-    const badgeSous = document.getElementById('badge-sous');
-    const badgeUnite = document.getElementById('badge-unite');
-    const msgSaved = document.getElementById('msg-saved');
-    const msgError = document.getElementById('msg-error');
+  const selCat = document.getElementById('sel-cat');
+  const selSous = document.getElementById('sel-sous');
+  const selUnite = document.getElementById('sel-unite');
+  const badgeSous = document.getElementById('badge-sous');
+  const badgeUnite = document.getElementById('badge-unite');
+  const msgSaved = document.getElementById('msg-saved');
+  const msgError = document.getElementById('msg-error');
 
-    function showMsg(el, txt) {
-      if (txt) el.textContent = txt;
-      el.style.display = 'block';
-      setTimeout(() => { el.style.display = 'none'; }, 3000);
+  function showMsg(el, txt) {
+    if (txt) el.textContent = txt;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
+
+  // Normalise une valeur Unite qui peut etre un entier ou un objet reference Grist
+  function toRowId(val) {
+    if (!val) return 0;
+    if (typeof val === 'object' && val !== null) {
+      return val.rowId || val.id || 0;
     }
+    return parseInt(val) || 0;
+  }
 
-    function buildCategories() {
-      const cats = [...new Set(allStructures.map(s => s.Categorie).filter(Boolean))].sort();
-      selCat.innerHTML = '<option value="">-- Choisir une categorie --</option>';
-      cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selCat.appendChild(o); });
-    }
+  function buildCategories() {
+    const cats = [...new Set(allStructures.map(s => s.Categorie).filter(Boolean))].sort();
+    selCat.innerHTML = '<option value="">-- Choisir une categorie --</option>';
+    cats.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      selCat.appendChild(o);
+    });
+  }
 
-    function buildSousCategories(cat) {
-      const sousSet = [...new Set(allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean))].sort();
-      selSous.innerHTML = '<option value="">-- Choisir une sous-categorie --</option>';
-      sousSet.forEach(sc => { const o = document.createElement('option'); o.value = sc; o.textContent = sc; selSous.appendChild(o); });
-      selSous.disabled = false;
-      selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
-      selUnite.disabled = true;
-      badgeSous.textContent = sousSet.length + ' sous-categories';
-      badgeUnite.textContent = '';
-    }
+  function buildSousCategories(cat) {
+    const sousSet = [...new Set(allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean))].sort();
+    selSous.innerHTML = '<option value="">-- Choisir une sous-categorie --</option>';
+    sousSet.forEach(sc => {
+      const o = document.createElement('option');
+      o.value = sc; o.textContent = sc;
+      selSous.appendChild(o);
+    });
+    selSous.disabled = false;
+    selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+    selUnite.disabled = true;
+    badgeSous.textContent = sousSet.length + ' sous-categories';
+    badgeUnite.textContent = '';
+  }
 
-    function buildUnites(cat, sousCat) {
-      const unites = allStructures.filter(s => s.Categorie === cat && s.Sous_Categorie === sousCat).sort((a, b) => a.Nom.localeCompare(b.Nom));
-      selUnite.innerHTML = '<option value="">-- Choisir une unite --</option>';
-      unites.forEach(u => { const o = document.createElement('option'); o.value = u.id; o.textContent = u.Nom; selUnite.appendChild(o); });
-      selUnite.disabled = false;
-      badgeUnite.textContent = unites.length + ' unites';
-    }
+  function buildUnites(cat, sousCat) {
+    const unites = allStructures.filter(s => s.Categorie === cat && s.Sous_Categorie === sousCat).sort((a, b) => a.Nom.localeCompare(b.Nom));
+    selUnite.innerHTML = '<option value="">-- Choisir une unite --</option>';
+    unites.forEach(u => {
+      const o = document.createElement('option');
+      o.value = u.id; o.textContent = u.Nom;
+      selUnite.appendChild(o);
+    });
+    selUnite.disabled = false;
+    badgeUnite.textContent = unites.length + ' unites';
+  }
 
-    function prefillFromRecord(record) {
-      if (!record || !dataLoaded) return;
-      if (record.Unite) {
-        const struct = allStructures.find(s => s.id === record.Unite);
-        if (struct) {
-          selCat.value = struct.Categorie;
-          buildSousCategories(struct.Categorie);
-          selSous.value = struct.Sous_Categorie;
-          buildUnites(struct.Categorie, struct.Sous_Categorie);
-          selUnite.value = record.Unite;
-        }
-      } else {
-        selCat.value = '';
-        selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
-        selSous.disabled = true;
-        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
-        selUnite.disabled = true;
-      }
-    }
-
-    selCat.addEventListener('change', () => {
-      const cat = selCat.value;
-      if (!cat) {
-        selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>'; selSous.disabled = true;
-        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>'; selUnite.disabled = true;
-        badgeSous.textContent = ''; badgeUnite.textContent = '';
+  function prefillFromRecord(record) {
+    if (!record || !dataLoaded) return;
+    const uniteId = toRowId(record.Unite);
+    if (uniteId) {
+      const struct = allStructures.find(s => s.id === uniteId);
+      if (struct) {
+        selCat.value = struct.Categorie;
+        buildSousCategories(struct.Categorie);
+        selSous.value = struct.Sous_Categorie;
+        buildUnites(struct.Categorie, struct.Sous_Categorie);
+        selUnite.value = uniteId;
         return;
       }
-      buildSousCategories(cat);
-    });
-
-    selSous.addEventListener('change', () => {
-      const sous = selSous.value;
-      if (!sous) {
-        selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>'; selUnite.disabled = true;
-        badgeUnite.textContent = ''; return;
-      }
-      buildUnites(selCat.value, sous);
-    });
-
-    selUnite.addEventListener('change', async () => {
-      const uniteId = parseInt(selUnite.value);
-      if (!uniteId || !currentRowId) return;
-      try {
-        await grist.docApi.applyUserActions([['UpdateRecord', 'Stagiaires', currentRowId, { Unite: uniteId }]]);
-        showMsg(msgSaved);
-      } catch(e) { showMsg(msgError, 'Erreur: ' + e.message); }
-    });
-
-    async function loadData() {
-      try {
-        const table = await grist.docApi.fetchTable('Structures');
-        allStructures = table.id.map((id, i) => ({
-          id, Nom: table.Nom[i], Categorie: table.Categorie[i], Sous_Categorie: table.Sous_Categorie[i]
-        })).filter(s => s.Nom);
-        buildCategories();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-        dataLoaded = true;
-        if (pendingRecord) { prefillFromRecord(pendingRecord); pendingRecord = null; }
-      } catch(e) {
-        document.getElementById('loading').textContent = 'Erreur: ' + e.message;
-      }
     }
+    // Pas de valeur ou valeur inconnue : reset
+    selCat.value = '';
+    selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
+    selSous.disabled = true;
+    selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+    selUnite.disabled = true;
+    badgeSous.textContent = '';
+    badgeUnite.textContent = '';
+  }
 
-    grist.ready({ requiredAccess: 'full' });
+  selCat.addEventListener('change', () => {
+    const cat = selCat.value;
+    if (!cat) {
+      selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
+      selSous.disabled = true;
+      selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+      selUnite.disabled = true;
+      badgeSous.textContent = ''; badgeUnite.textContent = '';
+      return;
+    }
+    buildSousCategories(cat);
+  });
 
-    grist.onRecord(function(record) {
-      currentRowId = record.id;
-      if (!dataLoaded) {
-        pendingRecord = record;
-        if (allStructures.length === 0) loadData();
-      } else {
-        prefillFromRecord(record);
+  selSous.addEventListener('change', () => {
+    const sous = selSous.value;
+    if (!sous) {
+      selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+      selUnite.disabled = true;
+      badgeUnite.textContent = '';
+      return;
+    }
+    buildUnites(selCat.value, sous);
+  });
+
+  selUnite.addEventListener('change', async () => {
+    const uniteId = parseInt(selUnite.value);
+    if (!uniteId || !currentRowId) return;
+    try {
+      await grist.docApi.applyUserActions([['UpdateRecord', 'Stagiaires', currentRowId, { Unite: uniteId }]]);
+      showMsg(msgSaved);
+    } catch(e) {
+      showMsg(msgError, 'Erreur: ' + e.message);
+    }
+  });
+
+  async function loadData() {
+    try {
+      const table = await grist.docApi.fetchTable('Structures');
+      allStructures = table.id.map((id, i) => ({
+        id,
+        Nom: table.Nom[i],
+        Categorie: table.Categorie[i],
+        Sous_Categorie: table.Sous_Categorie[i]
+      })).filter(s => s.Nom);
+      buildCategories();
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      dataLoaded = true;
+      if (pendingRecord) {
+        prefillFromRecord(pendingRecord);
+        pendingRecord = null;
       }
-    });
-  </script>
+    } catch(e) {
+      document.getElementById('loading').textContent = 'Erreur chargement: ' + e.message;
+    }
+  }
+
+  grist.ready({ requiredAccess: 'full' });
+
+  grist.onRecord(function(record) {
+    currentRowId = record.id;
+    if (!dataLoaded) {
+      pendingRecord = record;
+      loadData();
+    } else {
+      prefillFromRecord(record);
+    }
+  });
+</script>
 </body>
 </html>
