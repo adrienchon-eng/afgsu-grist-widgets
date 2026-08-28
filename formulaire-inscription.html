@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Formulaire Inscription Stagiaire</title>
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Inter, system-ui, sans-serif; background: #f6f7f9; padding: 16px; color: #1f2937; }
+h3 { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; margin-top: 18px; }
+.field { margin-bottom: 14px; }
+label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 14px; color: #1f2937; appearance: none; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,0.15); }
+select { cursor: pointer; }
+select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.checkbox-field { display: flex; align-items: center; gap: 8px; }
+.checkbox-field input { width: auto; }
+.badge { display: inline-block; margin-top: 4px; font-size: 11px; color: #6b7280; }
+.saved { margin-top: 10px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534; display: none; }
+.error { margin-top: 10px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b; display: none; }
+#loading { text-align: center; color: #6b7280; font-size: 13px; padding: 20px; }
+#app { display: none; }
+button#btn-save { margin-top: 18px; width: 100%; padding: 10px 14px; background: #0f766e; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+button#btn-save:hover { background: #0d5f58; }
+button#btn-save:disabled { background: #9ca3af; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div id="loading">Chargement des donnees...</div>
+<div id="app">
+<h3>Identite</h3>
+<div class="row2">
+<div class="field"><label>Nom</label><input id="f-nom" type="text" /></div>
+<div class="field"><label>Prenom</label><input id="f-prenom" type="text" /></div>
+</div>
+<div class="row2">
+<div class="field"><label>Nom marital</label><input id="f-nom-marital" type="text" /></div>
+<div class="field"><label>Sexe</label><select id="f-sexe"><option value="">--</option><option value="M">M</option><option value="F">F</option></select></div>
+</div>
+<div class="row2">
+<div class="field"><label>Date de naissance</label><input id="f-date-naissance" type="date" /></div>
+<div class="field"><label>Lieu de naissance</label><input id="f-lieu-naissance" type="text" /></div>
+</div>
+<div class="field"><label>Departement de naissance</label><input id="f-departement-naissance" type="text" /></div>
+
+<h3>Statut</h3>
+<div class="row2">
+<div class="field"><label>Statut</label><select id="f-statut"><option value="">--</option><option value="Civil">Civil</option><option value="Militaire">Militaire</option><option value="Reserviste">Reserviste</option></select></div>
+<div class="field checkbox-field"><input id="f-actif" type="checkbox" /><label style="margin-bottom:0;">Actif</label></div>
+</div>
+<div class="field"><label>Grade / Fonction</label><input id="f-grade-fonction" type="text" /></div>
+
+<h3>Affectation</h3>
+<div class="field">
+<label>Categorie</label>
+<select id="sel-cat"><option value="">-- Choisir une categorie --</option></select>
+</div>
+<div class="field">
+<label>Sous-categorie</label>
+<select id="sel-sous" disabled><option value="">-- Choisir d'abord une categorie --</option></select>
+<span class="badge" id="badge-sous"></span>
+</div>
+<div class="field">
+<label>Unite</label>
+<select id="sel-unite" disabled><option value="">-- Choisir d'abord une sous-categorie --</option></select>
+<span class="badge" id="badge-unite"></span>
+</div>
+<div class="field"><label>Service d'affectation</label><input id="f-service-affectation" type="text" /></div>
+<div class="field"><label>Fonction</label><select id="sel-fonction"><option value="">-- Choisir une fonction --</option></select></div>
+<div class="field"><label>Autre fonction</label><input id="f-autre-fonction" type="text" /></div>
+
+<h3>Contact</h3>
+<div class="row2">
+<div class="field"><label>Email personnel</label><input id="f-email" type="email" /></div>
+<div class="field"><label>Telephone personnel</label><input id="f-telephone" type="text" /></div>
+</div>
+<div class="row2">
+<div class="field"><label>Email professionnel</label><input id="f-email-pro" type="email" /></div>
+<div class="field"><label>Telephone professionnel</label><input id="f-telephone-pro" type="text" /></div>
+</div>
+
+<h3>Formation AFGSU</h3>
+<div class="row2">
+<div class="field"><label>Niveau AFGSU</label><select id="f-niveau-afgsu"><option value="">--</option><option value="AFGSU 1">AFGSU 1</option><option value="AFGSU 2">AFGSU 2</option></select></div>
+<div class="field"><label>Statut certification</label><select id="f-statut-certification"><option value="">--</option><option value="Non certifie">Non certifie</option><option value="Certifie">Certifie</option><option value="En cours">En cours</option></select></div>
+</div>
+<div class="row2">
+<div class="field"><label>Date formation initiale</label><input id="f-date-formation-initiale" type="date" /></div>
+<div class="field"><label>Date recyclage</label><input id="f-date-recyclage" type="date" /></div>
+</div>
+<div class="field"><label>Date expiration</label><input id="f-date-expiration" type="date" /></div>
+
+<h3>Notes</h3>
+<div class="field"><label>Notes</label><textarea id="f-notes"></textarea></div>
+
+<button id="btn-save">Enregistrer</button>
+<div class="saved" id="msg-saved">Enregistre avec succes.</div>
+<div class="error" id="msg-error">Erreur.</div>
+</div>
+
+<script>
+let allStructures = [];
+let allFonctions = [];
+let currentRowId = null;
+let pendingRecord = null;
+let dataLoaded = false;
+
+const selCat = document.getElementById('sel-cat');
+const selSous = document.getElementById('sel-sous');
+const selUnite = document.getElementById('sel-unite');
+const selFonction = document.getElementById('sel-fonction');
+const badgeSous = document.getElementById('badge-sous');
+const badgeUnite = document.getElementById('badge-unite');
+const msgSaved = document.getElementById('msg-saved');
+const msgError = document.getElementById('msg-error');
+const btnSave = document.getElementById('btn-save');
+
+const fields = {
+  Nom: document.getElementById('f-nom'),
+  Prenom: document.getElementById('f-prenom'),
+  Nom_Marital: document.getElementById('f-nom-marital'),
+  Sexe: document.getElementById('f-sexe'),
+  Date_Naissance: document.getElementById('f-date-naissance'),
+  Lieu_Naissance: document.getElementById('f-lieu-naissance'),
+  Departement_Naissance: document.getElementById('f-departement-naissance'),
+  Statut: document.getElementById('f-statut'),
+  Actif: document.getElementById('f-actif'),
+  Grade_Fonction: document.getElementById('f-grade-fonction'),
+  Service_Affectation: document.getElementById('f-service-affectation'),
+  Autre_Fonction: document.getElementById('f-autre-fonction'),
+  Email: document.getElementById('f-email'),
+  Telephone: document.getElementById('f-telephone'),
+  Email_Pro: document.getElementById('f-email-pro'),
+  Telephone_Pro: document.getElementById('f-telephone-pro'),
+  Niveau_AFGSU: document.getElementById('f-niveau-afgsu'),
+  Statut_Certification: document.getElementById('f-statut-certification'),
+  Date_Formation_Initiale: document.getElementById('f-date-formation-initiale'),
+  Date_Recyclage: document.getElementById('f-date-recyclage'),
+  Date_Expiration: document.getElementById('f-date-expiration'),
+  Notes: document.getElementById('f-notes')
+};
+
+function showMsg(el, txt) {
+  if (txt) el.textContent = txt;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function toRowId(val) {
+  if (!val) return 0;
+  if (typeof val === 'object' && val !== null) {
+    return val.rowId || val.id || 0;
+  }
+  return parseInt(val) || 0;
+}
+
+function fmtDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number') {
+    const d = new Date(val * 1000);
+    return d.toISOString().slice(0, 10);
+  }
+  return val;
+}
+
+function dateToTimestamp(str) {
+  if (!str) return null;
+  const d = new Date(str + 'T00:00:00Z');
+  return Math.floor(d.getTime() / 1000);
+}
+
+function buildCategories() {
+  const cats = [...new Set(allStructures.map(s => s.Categorie).filter(Boolean))].sort();
+  selCat.innerHTML = '<option value="">-- Choisir une categorie --</option>';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c;
+    o.textContent = c;
+    selCat.appendChild(o);
+  });
+}
+
+function buildSousCategories(cat) {
+  const sousSet = [...new Set(allStructures.filter(s => s.Categorie === cat).map(s => s.Sous_Categorie).filter(Boolean))].sort();
+  selSous.innerHTML = '<option value="">-- Choisir une sous-categorie --</option>';
+  sousSet.forEach(sc => {
+    const o = document.createElement('option');
+    o.value = sc;
+    o.textContent = sc;
+    selSous.appendChild(o);
+  });
+  selSous.disabled = false;
+  selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+  selUnite.disabled = true;
+  badgeSous.textContent = sousSet.length + ' sous-categories';
+  badgeUnite.textContent = '';
+}
+
+function buildUnites(cat, sousCat) {
+  const unites = allStructures.filter(s => s.Categorie === cat && s.Sous_Categorie === sousCat).sort((a, b) => a.Nom.localeCompare(b.Nom));
+  selUnite.innerHTML = '<option value="">-- Choisir une unite --</option>';
+  unites.forEach(u => {
+    const o = document.createElement('option');
+    o.value = u.id;
+    o.textContent = u.Nom;
+    selUnite.appendChild(o);
+  });
+  selUnite.disabled = false;
+  badgeUnite.textContent = unites.length + ' unites';
+}
+
+function buildFonctions() {
+  selFonction.innerHTML = '<option value="">-- Choisir une fonction --</option>';
+  allFonctions.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.id;
+    o.textContent = f.Nom;
+    selFonction.appendChild(o);
+  });
+}
+
+function resetCascade() {
+  selCat.value = '';
+  selSous.innerHTML = '<option value="">-- Choisir d\'abord une categorie --</option>';
+  selSous.disabled = true;
+  selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+  selUnite.disabled = true;
+  badgeSous.textContent = '';
+  badgeUnite.textContent = '';
+}
+
+function prefillFromRecord(record) {
+  if (!record || !dataLoaded) return;
+
+  fields.Nom.value = record.Nom || '';
+  fields.Prenom.value = record.Prenom || '';
+  fields.Nom_Marital.value = record.Nom_Marital || '';
+  fields.Sexe.value = record.Sexe || '';
+  fields.Date_Naissance.value = fmtDate(record.Date_Naissance);
+  fields.Lieu_Naissance.value = record.Lieu_Naissance || '';
+  fields.Departement_Naissance.value = record.Departement_Naissance || '';
+  fields.Statut.value = record.Statut || '';
+  fields.Actif.checked = !!record.Actif;
+  fields.Grade_Fonction.value = record.Grade_Fonction || '';
+  fields.Service_Affectation.value = record.Service_Affectation || '';
+  fields.Autre_Fonction.value = record.Autre_Fonction || '';
+  fields.Email.value = record.Email || '';
+  fields.Telephone.value = record.Telephone || '';
+  fields.Email_Pro.value = record.Email_Pro || '';
+  fields.Telephone_Pro.value = record.Telephone_Pro || '';
+  fields.Niveau_AFGSU.value = record.Niveau_AFGSU || '';
+  fields.Statut_Certification.value = record.Statut_Certification || '';
+  fields.Date_Formation_Initiale.value = fmtDate(record.Date_Formation_Initiale);
+  fields.Date_Recyclage.value = fmtDate(record.Date_Recyclage);
+  fields.Date_Expiration.value = fmtDate(record.Date_Expiration);
+  fields.Notes.value = record.Notes || '';
+
+  const fonctionId = toRowId(record.Fonction);
+  selFonction.value = fonctionId || '';
+
+  const uniteId = toRowId(record.Unite);
+  if (uniteId) {
+    const struct = allStructures.find(s => s.id === uniteId);
+    if (struct) {
+      selCat.value = struct.Categorie;
+      buildSousCategories(struct.Categorie);
+      selSous.value = struct.Sous_Categorie;
+      buildUnites(struct.Categorie, struct.Sous_Categorie);
+      selUnite.value = uniteId;
+      return;
+    }
+  }
+  resetCascade();
+}
+
+selCat.addEventListener('change', () => {
+  const cat = selCat.value;
+  if (!cat) {
+    resetCascade();
+    return;
+  }
+  buildSousCategories(cat);
+});
+
+selSous.addEventListener('change', () => {
+  const sous = selSous.value;
+  if (!sous) {
+    selUnite.innerHTML = '<option value="">-- Choisir d\'abord une sous-categorie --</option>';
+    selUnite.disabled = true;
+    badgeUnite.textContent = '';
+    return;
+  }
+  buildUnites(selCat.value, sous);
+});
+
+btnSave.addEventListener('click', async () => {
+  btnSave.disabled = true;
+  try {
+    const values = {
+      Nom: fields.Nom.value || null,
+      Prenom: fields.Prenom.value || null,
+      Nom_Marital: fields.Nom_Marital.value || null,
+      Sexe: fields.Sexe.value || null,
+      Date_Naissance: dateToTimestamp(fields.Date_Naissance.value),
+      Lieu_Naissance: fields.Lieu_Naissance.value || null,
+      Departement_Naissance: fields.Departement_Naissance.value || null,
+      Statut: fields.Statut.value || null,
+      Actif: fields.Actif.checked,
+      Grade_Fonction: fields.Grade_Fonction.value || null,
+      Service_Affectation: fields.Service_Affectation.value || null,
+      Autre_Fonction: fields.Autre_Fonction.value || null,
+      Email: fields.Email.value || null,
+      Telephone: fields.Telephone.value || null,
+      Email_Pro: fields.Email_Pro.value || null,
+      Telephone_Pro: fields.Telephone_Pro.value || null,
+      Niveau_AFGSU: fields.Niveau_AFGSU.value || null,
+      Statut_Certification: fields.Statut_Certification.value || null,
+      Date_Formation_Initiale: dateToTimestamp(fields.Date_Formation_Initiale.value),
+      Date_Recyclage: dateToTimestamp(fields.Date_Recyclage.value),
+      Date_Expiration: dateToTimestamp(fields.Date_Expiration.value),
+      Notes: fields.Notes.value || null,
+      Categorie_Unite: selCat.value || null,
+      Sous_Categorie_Unite: selSous.value || null,
+      Unite: selUnite.value ? parseInt(selUnite.value) : null,
+      Fonction: selFonction.value ? parseInt(selFonction.value) : null
+    };
+
+    if (currentRowId) {
+      await grist.docApi.applyUserActions([['UpdateRecord', 'Stagiaires', currentRowId, values]]);
+    } else {
+      const result = await grist.docApi.applyUserActions([['AddRecord', 'Stagiaires', null, values]]);
+      if (result && result.retValues && result.retValues[0]) {
+        currentRowId = result.retValues[0];
+      }
+    }
+    showMsg(msgSaved);
+  } catch (e) {
+    showMsg(msgError, 'Erreur: ' + e.message);
+  } finally {
+    btnSave.disabled = false;
+  }
+});
+
+async function loadData() {
+  try {
+    const table = await grist.docApi.fetchTable('Structures');
+    allStructures = table.id.map((id, i) => ({
+      id,
+      Nom: table.Nom[i],
+      Categorie: table.Categorie[i],
+      Sous_Categorie: table.Sous_Categorie[i]
+    })).filter(s => s.Nom);
+    buildCategories();
+
+    try {
+      const fonctionsTable = await grist.docApi.fetchTable('Fonctions');
+      allFonctions = fonctionsTable.id.map((id, i) => ({
+        id,
+        Nom: fonctionsTable.Nom[i]
+      })).filter(f => f.Nom);
+    } catch (e) {
+      allFonctions = [];
+    }
+    buildFonctions();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    dataLoaded = true;
+
+    if (pendingRecord) {
+      prefillFromRecord(pendingRecord);
+      pendingRecord = null;
+    }
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Erreur chargement: ' + e.message;
+  }
+}
+
+grist.ready({ requiredAccess: 'full' });
+grist.onRecord(function(record) {
+  currentRowId = record.id;
+  if (!dataLoaded) {
+    pendingRecord = record;
+    loadData();
+  } else {
+    prefillFromRecord(record);
+  }
+});
+</script>
+</body>
+</html>
