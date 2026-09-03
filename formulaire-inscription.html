@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -18,7 +17,7 @@ select { cursor: pointer; }
 select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
 textarea { resize: vertical; min-height: 60px; font-family: inherit; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.checkbox-field { display: flex; align-items: center; gap: 8px; }
+.checkbox-field { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
 .checkbox-field input { width: auto; }
 .badge { display: inline-block; margin-top: 4px; font-size: 11px; color: #6b7280; }
 .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
@@ -56,14 +55,19 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div class="field"><label>Date de naissance</label><input id="f-date-naissance" type="date" /></div>
 <div class="field"><label>Lieu de naissance</label><input id="f-lieu-naissance" type="text" /></div>
 </div>
-<div class="field"><label>Departement de naissance</label><input id="f-departement-naissance" type="text" /></div>
+<div class="field" id="departement-field">
+<label>Numero de departement</label>
+<input id="f-departement-search" type="text" autocomplete="off" placeholder="Tapez un numero ou un nom de departement..." />
+<div id="departement-autocomplete" class="autocomplete-list"></div>
+<div class="selected-badge" id="departement-selected-badge">
+  <span id="departement-selected-label"></span>
+  <button type="button" id="departement-clear">&times;</button>
+</div>
+</div>
 
 <h3>Statut</h3>
-<div class="row2">
 <div class="field"><label>Statut</label><select id="f-statut"><option value="">--</option><option value="Civil">Civil</option><option value="Militaire">Militaire</option><option value="Reserviste">Reserviste</option></select></div>
-<div class="field checkbox-field"><input id="f-actif" type="checkbox" /><label style="margin-bottom:0;">Actif</label></div>
-</div>
-<div class="field"><label>Grade / Fonction</label><input id="f-grade-fonction" type="text" /></div>
+<div class="field"><label>Grade</label><input id="f-grade-fonction" type="text" /></div>
 
 <h3>Affectation</h3>
 <div class="field" id="unite-field">
@@ -81,9 +85,15 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <input id="f-autre-affectation" type="text" placeholder="A renseigner uniquement si l'unite n'existe pas dans la liste" />
 </div>
 <div class="field"><label>Service d'affectation</label><input id="f-service-affectation" type="text" /></div>
-<div class="field">
+<div class="field" id="fonction-field">
 <label>Fonction</label>
-<select id="sel-fonction"><option value="">-- Choisir une fonction --</option></select>
+<input id="f-fonction-search" type="text" autocomplete="off" placeholder="Tapez le nom de la fonction..." />
+<div id="fonction-autocomplete" class="autocomplete-list"></div>
+<div class="selected-badge" id="fonction-selected-badge">
+  <span id="fonction-selected-label"></span>
+  <button type="button" id="fonction-clear">&times;</button>
+</div>
+<div class="hint">Renseignez la fonction OU le champ "Autre fonction" ci-dessous, pas les deux.</div>
 </div>
 <div class="field">
 <label>Autre fonction (si fonction non trouvee)</label>
@@ -92,24 +102,25 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 
 <h3>Contact</h3>
 <div class="row2">
-<div class="field"><label>Email personnel</label><input id="f-email" type="email" /></div>
-<div class="field"><label>Telephone personnel</label><input id="f-telephone" type="text" /></div>
-</div>
-<div class="row2">
-<div class="field"><label>Email professionnel</label><input id="f-email-pro" type="email" /></div>
-<div class="field"><label>Telephone professionnel</label><input id="f-telephone-pro" type="text" /></div>
+<div class="field"><label>Email</label><input id="f-email" type="email" /></div>
+<div class="field"><label>Telephone</label><input id="f-telephone" type="text" /></div>
 </div>
 
 <h3>Formation AFGSU</h3>
+<div class="checkbox-field"><input id="f-recyclage" type="checkbox" /><label style="margin-bottom:0;">Recyclage</label></div>
+<div class="field" id="type-formation-field">
+<label>Type de formation</label>
+<input id="f-type-formation-search" type="text" autocomplete="off" placeholder="AFGSU 1, AFGSU 2, Formateur de formateurs, Module SSE..." />
+<div id="type-formation-autocomplete" class="autocomplete-list"></div>
+<div class="selected-badge" id="type-formation-selected-badge">
+  <span id="type-formation-selected-label"></span>
+  <button type="button" id="type-formation-clear">&times;</button>
+</div>
+</div>
 <div class="row2">
-<div class="field"><label>Niveau AFGSU</label><select id="f-niveau-afgsu"><option value="">--</option><option value="AFGSU 1">AFGSU 1</option><option value="AFGSU 2">AFGSU 2</option></select></div>
+<div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
 <div class="field"><label>Statut certification</label><select id="f-statut-certification"><option value="">--</option><option value="Non certifie">Non certifie</option><option value="Certifie">Certifie</option><option value="En cours">En cours</option></select></div>
 </div>
-<div class="row2">
-<div class="field"><label>Date formation initiale</label><input id="f-date-formation-initiale" type="date" /></div>
-<div class="field"><label>Date recyclage</label><input id="f-date-recyclage" type="date" /></div>
-</div>
-<div class="field"><label>Date expiration</label><input id="f-date-expiration" type="date" /></div>
 
 <h3>Notes</h3>
 <div class="field"><textarea id="f-notes"></textarea></div>
@@ -122,22 +133,67 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <script>
 let allStructures = [];
 let allFonctions = [];
+let allTypesFormation = [];
 let currentRowId = null;
 let pendingRecord = null;
 let dataLoaded = false;
 let selectedUniteId = null;
-let activeIndex = -1;
-let currentMatches = [];
+let selectedFonctionId = null;
+let selectedTypeFormation = null;
+let selectedDepartementCode = null;
+
+const DEPARTEMENTS = [
+  ['01','Ain'],['02','Aisne'],['03','Allier'],['04','Alpes-de-Haute-Provence'],['05','Hautes-Alpes'],
+  ['06','Alpes-Maritimes'],['07',"Ardeche"],['08','Ardennes'],['09','Ariege'],['10','Aube'],
+  ['11','Aude'],['12','Aveyron'],['13','Bouches-du-Rhone'],['14','Calvados'],['15','Cantal'],
+  ['16','Charente'],['17','Charente-Maritime'],['18','Cher'],['19',"Correze"],['2A',"Corse-du-Sud"],
+  ['2B','Haute-Corse'],['21',"Cote-d'Or"],['22',"Cotes-d'Armor"],['23','Creuse'],['24','Dordogne'],
+  ['25','Doubs'],['26','Drome'],['27','Eure'],['28','Eure-et-Loir'],['29',"Finistere"],
+  ['30','Gard'],['31','Haute-Garonne'],['32','Gers'],['33','Gironde'],['34',"Herault"],
+  ['35','Ille-et-Vilaine'],['36','Indre'],['37','Indre-et-Loire'],['38',"Isere"],['39','Jura'],
+  ['40','Landes'],['41','Loir-et-Cher'],['42','Loire'],['43','Haute-Loire'],['44','Loire-Atlantique'],
+  ['45','Loiret'],['46','Lot'],['47','Lot-et-Garonne'],['48',"Lozere"],['49','Maine-et-Loire'],
+  ['50','Manche'],['51','Marne'],['52','Haute-Marne'],['53','Mayenne'],['54','Meurthe-et-Moselle'],
+  ['55','Meuse'],['56','Morbihan'],['57','Moselle'],['58',"Nievre"],['59','Nord'],
+  ['60','Oise'],['61','Orne'],['62','Pas-de-Calais'],['63',"Puy-de-Dome"],['64','Pyrenees-Atlantiques'],
+  ['65','Hautes-Pyrenees'],['66','Pyrenees-Orientales'],['67','Bas-Rhin'],['68','Haut-Rhin'],['69',"Rhone"],
+  ['70',"Haute-Saone"],['71',"Saone-et-Loire"],['72','Sarthe'],['73','Savoie'],['74','Haute-Savoie'],
+  ['75','Paris'],['76','Seine-Maritime'],['77','Seine-et-Marne'],['78','Yvelines'],['79',"Deux-Sevres"],
+  ['80','Somme'],['81','Tarn'],['82','Tarn-et-Garonne'],['83','Var'],['84','Vaucluse'],
+  ['85',"Vendee"],['86','Vienne'],['87','Haute-Vienne'],['88','Vosges'],['89','Yonne'],
+  ['90','Territoire de Belfort'],['91','Essonne'],['92','Hauts-de-Seine'],['93','Seine-Saint-Denis'],['94','Val-de-Marne'],
+  ['95',"Val-d'Oise"],['971','Guadeloupe'],['972','Martinique'],['973','Guyane'],['974',"La Reunion"],
+  ['975','Saint-Pierre-et-Miquelon'],['976','Mayotte'],['99',"Etranger"]
+];
 
 const uniteSearch = document.getElementById('f-unite-search');
 const uniteAutocomplete = document.getElementById('unite-autocomplete');
 const uniteBadge = document.getElementById('unite-selected-badge');
 const uniteBadgeLabel = document.getElementById('unite-selected-label');
 const uniteClearBtn = document.getElementById('unite-clear');
-const selFonction = document.getElementById('sel-fonction');
+
+const fonctionSearch = document.getElementById('f-fonction-search');
+const fonctionAutocomplete = document.getElementById('fonction-autocomplete');
+const fonctionBadge = document.getElementById('fonction-selected-badge');
+const fonctionBadgeLabel = document.getElementById('fonction-selected-label');
+const fonctionClearBtn = document.getElementById('fonction-clear');
+
+const typeFormationSearch = document.getElementById('f-type-formation-search');
+const typeFormationAutocomplete = document.getElementById('type-formation-autocomplete');
+const typeFormationBadge = document.getElementById('type-formation-selected-badge');
+const typeFormationBadgeLabel = document.getElementById('type-formation-selected-label');
+const typeFormationClearBtn = document.getElementById('type-formation-clear');
+
+const departementSearch = document.getElementById('f-departement-search');
+const departementAutocomplete = document.getElementById('departement-autocomplete');
+const departementBadge = document.getElementById('departement-selected-badge');
+const departementBadgeLabel = document.getElementById('departement-selected-label');
+const departementClearBtn = document.getElementById('departement-clear');
+
 const msgSaved = document.getElementById('msg-saved');
 const msgError = document.getElementById('msg-error');
 const btnSave = document.getElementById('btn-save');
+const recyclageCheckbox = document.getElementById('f-recyclage');
 
 const fields = {
   Nom: document.getElementById('f-nom'),
@@ -146,22 +202,15 @@ const fields = {
   Sexe: document.getElementById('f-sexe'),
   Date_Naissance: document.getElementById('f-date-naissance'),
   Lieu_Naissance: document.getElementById('f-lieu-naissance'),
-  Departement_Naissance: document.getElementById('f-departement-naissance'),
   Statut: document.getElementById('f-statut'),
-  Actif: document.getElementById('f-actif'),
   Grade_Fonction: document.getElementById('f-grade-fonction'),
   Service_Affectation: document.getElementById('f-service-affectation'),
   Autre_Affectation: document.getElementById('f-autre-affectation'),
   Autre_Fonction: document.getElementById('f-autre-fonction'),
   Email: document.getElementById('f-email'),
   Telephone: document.getElementById('f-telephone'),
-  Email_Pro: document.getElementById('f-email-pro'),
-  Telephone_Pro: document.getElementById('f-telephone-pro'),
-  Niveau_AFGSU: document.getElementById('f-niveau-afgsu'),
   Statut_Certification: document.getElementById('f-statut-certification'),
-  Date_Formation_Initiale: document.getElementById('f-date-formation-initiale'),
-  Date_Recyclage: document.getElementById('f-date-recyclage'),
-  Date_Expiration: document.getElementById('f-date-expiration'),
+  Date_Formation: document.getElementById('f-date-formation'),
   Notes: document.getElementById('f-notes')
 };
 
@@ -194,55 +243,92 @@ function dateToTimestamp(str) {
   return Math.floor(d.getTime() / 1000);
 }
 
-function buildFonctions() {
-  selFonction.innerHTML = '<option value="">-- Choisir une fonction --</option>';
-  allFonctions.forEach(f => {
-    const o = document.createElement('option');
-    o.value = f.id;
-    o.textContent = f.Nom;
-    selFonction.appendChild(o);
+function normalize(str) {
+  return (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+/* ---------- Generic autocomplete helper ---------- */
+
+function makeAutocomplete(opts) {
+  let currentMatches = [];
+  let activeIndex = -1;
+
+  function render(matches) {
+    currentMatches = matches;
+    activeIndex = -1;
+    if (!matches.length) {
+      opts.listEl.style.display = 'none';
+      opts.listEl.innerHTML = '';
+      return;
+    }
+    opts.listEl.innerHTML = matches.map((m, i) => `
+      <div class="autocomplete-item" data-index="${i}">
+        ${opts.itemLabel(m)}
+        ${opts.itemSub ? '<span class="sub">' + opts.itemSub(m) + '</span>' : ''}
+      </div>
+    `).join('');
+    opts.listEl.style.display = 'block';
+    opts.listEl.querySelectorAll('.autocomplete-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.getAttribute('data-index'));
+        opts.onSelect(currentMatches[idx]);
+      });
+    });
+  }
+
+  function updateActive() {
+    opts.listEl.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+      el.classList.toggle('active', i === activeIndex);
+    });
+  }
+
+  function filter(term) {
+    const t = normalize(term);
+    if (!t) { render([]); return; }
+    const matches = opts.items().filter(it => normalize(opts.itemLabel(it)).includes(t)).slice(0, 40);
+    render(matches);
+  }
+
+  opts.inputEl.addEventListener('input', () => filter(opts.inputEl.value));
+  opts.inputEl.addEventListener('keydown', (e) => {
+    if (!currentMatches.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, currentMatches.length - 1);
+      updateActive();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActive();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0) opts.onSelect(currentMatches[activeIndex]);
+    } else if (e.key === 'Escape') {
+      render([]);
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!opts.inputEl.contains(e.target) && !opts.listEl.contains(e.target)) {
+      opts.listEl.style.display = 'none';
+    }
   });
 }
 
-/* ---------- Autocomplete Unite ---------- */
+/* ---------- Unite ---------- */
 
 function labelForStruct(s) {
   const parts = [s.Categorie, s.Sous_Categorie].filter(Boolean).join(' / ');
   return parts ? parts : '';
 }
 
-function renderAutocomplete(matches) {
-  currentMatches = matches;
-  activeIndex = -1;
-  if (!matches.length) {
-    uniteAutocomplete.style.display = 'none';
-    uniteAutocomplete.innerHTML = '';
-    return;
-  }
-  uniteAutocomplete.innerHTML = matches.map((s, i) => `
-    <div class="autocomplete-item" data-index="${i}">
-      ${s.Nom}
-      <span class="sub">${labelForStruct(s)}</span>
-    </div>
-  `).join('');
-  uniteAutocomplete.style.display = 'block';
-  uniteAutocomplete.querySelectorAll('.autocomplete-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const idx = parseInt(el.getAttribute('data-index'));
-      selectUnite(currentMatches[idx]);
-    });
-  });
-}
-
-function filterUnites(term) {
-  const t = term.trim().toLowerCase();
-  if (!t) {
-    renderAutocomplete([]);
-    return;
-  }
-  const matches = allStructures.filter(s => s.Nom.toLowerCase().includes(t)).slice(0, 30);
-  renderAutocomplete(matches);
-}
+makeAutocomplete({
+  inputEl: uniteSearch,
+  listEl: uniteAutocomplete,
+  items: () => allStructures,
+  itemLabel: (s) => s.Nom,
+  itemSub: (s) => labelForStruct(s),
+  onSelect: (s) => selectUnite(s)
+});
 
 function selectUnite(struct) {
   selectedUniteId = struct.id;
@@ -251,7 +337,6 @@ function selectUnite(struct) {
   uniteBadgeLabel.textContent = struct.Nom + (labelForStruct(struct) ? ' (' + labelForStruct(struct) + ')' : '');
   uniteBadge.classList.add('show');
   uniteAutocomplete.style.display = 'none';
-  /* Regle d'exclusivite : une unite selectionnee vide "Autre affectation" */
   fields.Autre_Affectation.value = '';
 }
 
@@ -263,46 +348,101 @@ function clearUnite() {
   uniteBadgeLabel.textContent = '';
 }
 
-uniteSearch.addEventListener('input', () => filterUnites(uniteSearch.value));
-
-uniteSearch.addEventListener('keydown', (e) => {
-  if (!currentMatches.length) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    activeIndex = Math.min(activeIndex + 1, currentMatches.length - 1);
-    updateActiveItem();
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    activeIndex = Math.max(activeIndex - 1, 0);
-    updateActiveItem();
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    if (activeIndex >= 0) selectUnite(currentMatches[activeIndex]);
-  } else if (e.key === 'Escape') {
-    renderAutocomplete([]);
-  }
+uniteClearBtn.addEventListener('click', clearUnite);
+fields.Autre_Affectation.addEventListener('input', () => {
+  if (fields.Autre_Affectation.value.trim() && selectedUniteId) clearUnite();
 });
 
-function updateActiveItem() {
-  uniteAutocomplete.querySelectorAll('.autocomplete-item').forEach((el, i) => {
-    el.classList.toggle('active', i === activeIndex);
-  });
+/* ---------- Fonction ---------- */
+
+makeAutocomplete({
+  inputEl: fonctionSearch,
+  listEl: fonctionAutocomplete,
+  items: () => allFonctions,
+  itemLabel: (f) => f.Fonctions,
+  onSelect: (f) => selectFonction(f)
+});
+
+function selectFonction(f) {
+  selectedFonctionId = f.id;
+  fonctionSearch.value = '';
+  fonctionSearch.disabled = true;
+  fonctionBadgeLabel.textContent = f.Fonctions;
+  fonctionBadge.classList.add('show');
+  fonctionAutocomplete.style.display = 'none';
+  fields.Autre_Fonction.value = '';
 }
 
-document.addEventListener('click', (e) => {
-  if (!uniteSearch.contains(e.target) && !uniteAutocomplete.contains(e.target)) {
-    uniteAutocomplete.style.display = 'none';
-  }
+function clearFonction() {
+  selectedFonctionId = null;
+  fonctionSearch.disabled = false;
+  fonctionSearch.value = '';
+  fonctionBadge.classList.remove('show');
+  fonctionBadgeLabel.textContent = '';
+}
+
+fonctionClearBtn.addEventListener('click', clearFonction);
+fields.Autre_Fonction.addEventListener('input', () => {
+  if (fields.Autre_Fonction.value.trim() && selectedFonctionId) clearFonction();
 });
 
-uniteClearBtn.addEventListener('click', clearUnite);
+/* ---------- Type de formation ---------- */
 
-/* Regle d'exclusivite : saisir "Autre affectation" retire l'unite selectionnee */
-fields.Autre_Affectation.addEventListener('input', () => {
-  if (fields.Autre_Affectation.value.trim() && selectedUniteId) {
-    clearUnite();
-  }
+makeAutocomplete({
+  inputEl: typeFormationSearch,
+  listEl: typeFormationAutocomplete,
+  items: () => allTypesFormation,
+  itemLabel: (t) => t.Type,
+  onSelect: (t) => selectTypeFormation(t)
 });
+
+function selectTypeFormation(t) {
+  selectedTypeFormation = t;
+  typeFormationSearch.value = '';
+  typeFormationSearch.disabled = true;
+  typeFormationBadgeLabel.textContent = t.Type;
+  typeFormationBadge.classList.add('show');
+  typeFormationAutocomplete.style.display = 'none';
+}
+
+function clearTypeFormation() {
+  selectedTypeFormation = null;
+  typeFormationSearch.disabled = false;
+  typeFormationSearch.value = '';
+  typeFormationBadge.classList.remove('show');
+  typeFormationBadgeLabel.textContent = '';
+}
+
+typeFormationClearBtn.addEventListener('click', clearTypeFormation);
+
+/* ---------- Departement ---------- */
+
+makeAutocomplete({
+  inputEl: departementSearch,
+  listEl: departementAutocomplete,
+  items: () => DEPARTEMENTS.map(d => ({ code: d[0], label: d[1] })),
+  itemLabel: (d) => d.code + ' - ' + d.label,
+  onSelect: (d) => selectDepartement(d)
+});
+
+function selectDepartement(d) {
+  selectedDepartementCode = d.code;
+  departementSearch.value = '';
+  departementSearch.disabled = true;
+  departementBadgeLabel.textContent = d.code + ' - ' + d.label;
+  departementBadge.classList.add('show');
+  departementAutocomplete.style.display = 'none';
+}
+
+function clearDepartement() {
+  selectedDepartementCode = null;
+  departementSearch.disabled = false;
+  departementSearch.value = '';
+  departementBadge.classList.remove('show');
+  departementBadgeLabel.textContent = '';
+}
+
+departementClearBtn.addEventListener('click', clearDepartement);
 
 /* ---------- Prefill / Save / Load ---------- */
 
@@ -315,35 +455,45 @@ function prefillFromRecord(record) {
   fields.Sexe.value = record.Sexe || '';
   fields.Date_Naissance.value = fmtDate(record.Date_Naissance);
   fields.Lieu_Naissance.value = record.Lieu_Naissance || '';
-  fields.Departement_Naissance.value = record.Departement_Naissance || '';
   fields.Statut.value = record.Statut || '';
-  fields.Actif.checked = !!record.Actif;
   fields.Grade_Fonction.value = record.Grade_Fonction || '';
   fields.Service_Affectation.value = record.Service_Affectation || '';
   fields.Autre_Affectation.value = record.Autre_Affectation || '';
   fields.Autre_Fonction.value = record.Autre_Fonction || '';
   fields.Email.value = record.Email || '';
   fields.Telephone.value = record.Telephone || '';
-  fields.Email_Pro.value = record.Email_Pro || '';
-  fields.Telephone_Pro.value = record.Telephone_Pro || '';
-  fields.Niveau_AFGSU.value = record.Niveau_AFGSU || '';
   fields.Statut_Certification.value = record.Statut_Certification || '';
-  fields.Date_Formation_Initiale.value = fmtDate(record.Date_Formation_Initiale);
-  fields.Date_Recyclage.value = fmtDate(record.Date_Recyclage);
-  fields.Date_Expiration.value = fmtDate(record.Date_Expiration);
   fields.Notes.value = record.Notes || '';
 
+  clearDepartement();
+  if (record.Departement_de_Naissance) {
+    const dep = DEPARTEMENTS.find(d => d[0] === record.Departement_de_Naissance);
+    if (dep) selectDepartement({ code: dep[0], label: dep[1] });
+  }
+
+  clearFonction();
   const fonctionId = toRowId(record.Fonction);
-  selFonction.value = fonctionId || '';
+  if (fonctionId) {
+    const f = allFonctions.find(x => x.id === fonctionId);
+    if (f) selectFonction(f);
+  }
 
   clearUnite();
   const uniteId = toRowId(record.Unite);
   if (uniteId) {
     const struct = allStructures.find(s => s.id === uniteId);
-    if (struct) {
-      selectUnite(struct);
-    }
+    if (struct) selectUnite(struct);
   }
+
+  clearTypeFormation();
+  if (record.Niveau_AFGSU) {
+    const t = allTypesFormation.find(x => x.Type === record.Niveau_AFGSU);
+    if (t) selectTypeFormation(t);
+  }
+
+  const isRecyclage = !!record.Date_Recyclage && !record.Date_Formation_Initiale;
+  recyclageCheckbox.checked = isRecyclage;
+  fields.Date_Formation.value = isRecyclage ? fmtDate(record.Date_Recyclage) : fmtDate(record.Date_Formation_Initiale);
 }
 
 btnSave.addEventListener('click', async () => {
@@ -351,6 +501,8 @@ btnSave.addEventListener('click', async () => {
   try {
     const autreAffectation = fields.Autre_Affectation.value.trim() || null;
     const uniteStruct = selectedUniteId ? allStructures.find(s => s.id === selectedUniteId) : null;
+    const dateFormationTs = dateToTimestamp(fields.Date_Formation.value);
+    const isRecyclage = recyclageCheckbox.checked;
 
     const values = {
       Nom: fields.Nom.value || null,
@@ -359,28 +511,23 @@ btnSave.addEventListener('click', async () => {
       Sexe: fields.Sexe.value || null,
       Date_Naissance: dateToTimestamp(fields.Date_Naissance.value),
       Lieu_Naissance: fields.Lieu_Naissance.value || null,
-      Departement_Naissance: fields.Departement_Naissance.value || null,
+      Departement_de_Naissance: selectedDepartementCode || null,
       Statut: fields.Statut.value || null,
-      Actif: fields.Actif.checked,
       Grade_Fonction: fields.Grade_Fonction.value || null,
       Service_Affectation: fields.Service_Affectation.value || null,
       Autre_Affectation: autreAffectation,
-      Autre_Fonction: fields.Autre_Fonction.value || null,
+      Autre_Fonction: fields.Autre_Fonction.value.trim() || null,
       Email: fields.Email.value || null,
       Telephone: fields.Telephone.value || null,
-      Email_Pro: fields.Email_Pro.value || null,
-      Telephone_Pro: fields.Telephone_Pro.value || null,
-      Niveau_AFGSU: fields.Niveau_AFGSU.value || null,
+      Niveau_AFGSU: selectedTypeFormation ? selectedTypeFormation.Type : null,
       Statut_Certification: fields.Statut_Certification.value || null,
-      Date_Formation_Initiale: dateToTimestamp(fields.Date_Formation_Initiale.value),
-      Date_Recyclage: dateToTimestamp(fields.Date_Recyclage.value),
-      Date_Expiration: dateToTimestamp(fields.Date_Expiration.value),
       Notes: fields.Notes.value || null,
-      /* Une affectation libre interdit toute reference vers Structures */
       Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Categorie : null),
       Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
       Unite: autreAffectation ? null : selectedUniteId,
-      Fonction: selFonction.value ? parseInt(selFonction.value) : null
+      Fonction: selectedFonctionId || null,
+      Date_Formation_Initiale: isRecyclage ? null : dateFormationTs,
+      Date_Recyclage: isRecyclage ? dateFormationTs : null
     };
 
     if (currentRowId) {
@@ -413,12 +560,21 @@ async function loadData() {
       const fonctionsTable = await grist.docApi.fetchTable('Fonctions');
       allFonctions = fonctionsTable.id.map((id, i) => ({
         id,
-        Nom: fonctionsTable.Nom[i]
-      })).filter(f => f.Nom);
+        Fonctions: fonctionsTable.Fonctions[i]
+      })).filter(f => f.Fonctions);
     } catch (e) {
       allFonctions = [];
     }
-    buildFonctions();
+
+    try {
+      const typesTable = await grist.docApi.fetchTable('Types_Formation');
+      allTypesFormation = typesTable.id.map((id, i) => ({
+        id,
+        Type: typesTable.Type[i]
+      })).filter(t => t.Type);
+    } catch (e) {
+      allTypesFormation = [];
+    }
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
