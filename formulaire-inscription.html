@@ -11,7 +11,8 @@ body { font-family: Inter, system-ui, sans-serif; background: #f6f7f9; padding: 
 h3 { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; margin-top: 18px; }
 .field { margin-bottom: 14px; position: relative; }
 label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
-input, select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 14px; color: #1f2937; appearance: none; }
+input:not([type="checkbox"]), select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 14px; color: #1f2937; appearance: none; }
+input[type="checkbox"] { width: 16px; height: 16px; appearance: auto; accent-color: #0f766e; cursor: pointer; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,0.15); }
 select { cursor: pointer; }
 select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
@@ -117,10 +118,7 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
   <button type="button" id="type-formation-clear">&times;</button>
 </div>
 </div>
-<div class="row2">
 <div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
-<div class="field"><label>Statut certification</label><select id="f-statut-certification"><option value="">--</option><option value="Non certifie">Non certifie</option><option value="Certifie">Certifie</option><option value="En cours">En cours</option></select></div>
-</div>
 
 <h3>Notes</h3>
 <div class="field"><textarea id="f-notes"></textarea></div>
@@ -209,7 +207,6 @@ const fields = {
   Autre_Fonction: document.getElementById('f-autre-fonction'),
   Email: document.getElementById('f-email'),
   Telephone: document.getElementById('f-telephone'),
-  Statut_Certification: document.getElementById('f-statut-certification'),
   Date_Formation: document.getElementById('f-date-formation'),
   Notes: document.getElementById('f-notes')
 };
@@ -462,7 +459,6 @@ function prefillFromRecord(record) {
   fields.Autre_Fonction.value = record.Autre_Fonction || '';
   fields.Email.value = record.Email || '';
   fields.Telephone.value = record.Telephone || '';
-  fields.Statut_Certification.value = record.Statut_Certification || '';
   fields.Notes.value = record.Notes || '';
 
   clearDepartement();
@@ -520,7 +516,6 @@ btnSave.addEventListener('click', async () => {
       Email: fields.Email.value || null,
       Telephone: fields.Telephone.value || null,
       Niveau_AFGSU: selectedTypeFormation ? selectedTypeFormation.Type : null,
-      Statut_Certification: fields.Statut_Certification.value || null,
       Notes: fields.Notes.value || null,
       Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Categorie : null),
       Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
