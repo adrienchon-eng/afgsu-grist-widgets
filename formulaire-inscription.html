@@ -109,15 +109,7 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 
 <h3>Formation AFGSU</h3>
 <div class="checkbox-field"><input id="f-recyclage" type="checkbox" /><label style="margin-bottom:0;">Recyclage</label></div>
-<div class="field" id="type-formation-field">
-<label>Type de formation</label>
-<input id="f-type-formation-search" type="text" autocomplete="off" placeholder="AFGSU 1, AFGSU 2, Formateur de formateurs, Module SSE..." />
-<div id="type-formation-autocomplete" class="autocomplete-list"></div>
-<div class="selected-badge" id="type-formation-selected-badge">
-  <span id="type-formation-selected-label"></span>
-  <button type="button" id="type-formation-clear">&times;</button>
-</div>
-</div>
+<div class="field"><label>Type de formation</label><select id="f-type-formation-select"><option value="">-- Choisir un type de formation --</option></select></div>
 <div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
 
 <h3>Notes</h3>
@@ -137,7 +129,6 @@ let pendingRecord = null;
 let dataLoaded = false;
 let selectedUniteId = null;
 let selectedFonctionId = null;
-let selectedTypeFormation = null;
 let selectedDepartementCode = null;
 
 const DEPARTEMENTS = [
@@ -176,11 +167,7 @@ const fonctionBadge = document.getElementById('fonction-selected-badge');
 const fonctionBadgeLabel = document.getElementById('fonction-selected-label');
 const fonctionClearBtn = document.getElementById('fonction-clear');
 
-const typeFormationSearch = document.getElementById('f-type-formation-search');
-const typeFormationAutocomplete = document.getElementById('type-formation-autocomplete');
-const typeFormationBadge = document.getElementById('type-formation-selected-badge');
-const typeFormationBadgeLabel = document.getElementById('type-formation-selected-label');
-const typeFormationClearBtn = document.getElementById('type-formation-clear');
+const typeFormationSelect = document.getElementById('f-type-formation-select');
 
 const departementSearch = document.getElementById('f-departement-search');
 const departementAutocomplete = document.getElementById('departement-autocomplete');
@@ -383,35 +370,6 @@ fields.Autre_Fonction.addEventListener('input', () => {
   if (fields.Autre_Fonction.value.trim() && selectedFonctionId) clearFonction();
 });
 
-/* ---------- Type de formation ---------- */
-
-makeAutocomplete({
-  inputEl: typeFormationSearch,
-  listEl: typeFormationAutocomplete,
-  items: () => allTypesFormation,
-  itemLabel: (t) => t.Type,
-  onSelect: (t) => selectTypeFormation(t)
-});
-
-function selectTypeFormation(t) {
-  selectedTypeFormation = t;
-  typeFormationSearch.value = '';
-  typeFormationSearch.disabled = true;
-  typeFormationBadgeLabel.textContent = t.Type;
-  typeFormationBadge.classList.add('show');
-  typeFormationAutocomplete.style.display = 'none';
-}
-
-function clearTypeFormation() {
-  selectedTypeFormation = null;
-  typeFormationSearch.disabled = false;
-  typeFormationSearch.value = '';
-  typeFormationBadge.classList.remove('show');
-  typeFormationBadgeLabel.textContent = '';
-}
-
-typeFormationClearBtn.addEventListener('click', clearTypeFormation);
-
 /* ---------- Departement ---------- */
 
 makeAutocomplete({
@@ -481,11 +439,7 @@ function prefillFromRecord(record) {
     if (struct) selectUnite(struct);
   }
 
-  clearTypeFormation();
-  if (record.Niveau_AFGSU) {
-    const t = allTypesFormation.find(x => x.Type === record.Niveau_AFGSU);
-    if (t) selectTypeFormation(t);
-  }
+  typeFormationSelect.value = record.Niveau_AFGSU || '';
 
   const isRecyclage = !!record.Date_Recyclage && !record.Date_Formation_Initiale;
   recyclageCheckbox.checked = isRecyclage;
@@ -515,7 +469,7 @@ btnSave.addEventListener('click', async () => {
       Autre_Fonction: fields.Autre_Fonction.value.trim() || null,
       Email: fields.Email.value || null,
       Telephone: fields.Telephone.value || null,
-      Niveau_AFGSU: selectedTypeFormation ? selectedTypeFormation.Type : null,
+      Niveau_AFGSU: typeFormationSelect.value || null,
       Notes: fields.Notes.value || null,
       Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Categorie : null),
       Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
@@ -570,6 +524,9 @@ async function loadData() {
     } catch (e) {
       allTypesFormation = [];
     }
+
+    typeFormationSelect.innerHTML = '<option value="">-- Choisir un type de formation --</option>' +
+      allTypesFormation.map(t => `<option value="${t.Type}">${t.Type}</option>`).join('');
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
