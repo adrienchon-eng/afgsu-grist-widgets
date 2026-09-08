@@ -110,6 +110,25 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <h3>Formation AFGSU</h3>
 <div class="checkbox-field"><input id="f-recyclage" type="checkbox" /><label style="margin-bottom:0;">Recyclage</label></div>
 <div class="field"><label>Type de formation</label><select id="f-type-formation-select"><option value="">-- Choisir un type de formation --</option></select></div>
+<div class="field" id="lieu-formation-field">
+<label>Lieu de formation</label>
+<input id="f-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom du lieu..." />
+<div id="lieu-formation-autocomplete" class="autocomplete-list"></div>
+<div class="selected-badge" id="lieu-formation-selected-badge">
+  <span id="lieu-formation-selected-label"></span>
+  <button type="button" id="lieu-formation-clear">&times;</button>
+</div>
+<div class="hint">Si le lieu n'existe pas encore, utilisez "Autre lieu de formation" ci-dessous.</div>
+</div>
+<div class="field" id="autre-lieu-formation-field">
+<label>Autre lieu de formation (unite non encore enregistree comme lieu)</label>
+<input id="f-autre-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom de l'unite..." />
+<div id="autre-lieu-formation-autocomplete" class="autocomplete-list"></div>
+<div class="selected-badge" id="autre-lieu-formation-selected-badge">
+  <span id="autre-lieu-formation-selected-label"></span>
+  <button type="button" id="autre-lieu-formation-clear">&times;</button>
+</div>
+</div>
 <div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
 
 <h3>Notes</h3>
@@ -124,12 +143,15 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 let allStructures = [];
 let allFonctions = [];
 let allTypesFormation = [];
+let allLieux = [];
 let currentRowId = null;
 let pendingRecord = null;
 let dataLoaded = false;
 let selectedUniteId = null;
 let selectedFonctionId = null;
 let selectedDepartementCode = null;
+let selectedLieuId = null;
+let selectedAutreLieuStructureId = null;
 
 const DEPARTEMENTS = [
   ['01','Ain'],['02','Aisne'],['03','Allier'],['04','Alpes-de-Haute-Provence'],['05','Hautes-Alpes'],
@@ -174,6 +196,18 @@ const departementAutocomplete = document.getElementById('departement-autocomplet
 const departementBadge = document.getElementById('departement-selected-badge');
 const departementBadgeLabel = document.getElementById('departement-selected-label');
 const departementClearBtn = document.getElementById('departement-clear');
+
+const lieuFormationSearch = document.getElementById('f-lieu-formation-search');
+const lieuFormationAutocomplete = document.getElementById('lieu-formation-autocomplete');
+const lieuFormationBadge = document.getElementById('lieu-formation-selected-badge');
+const lieuFormationBadgeLabel = document.getElementById('lieu-formation-selected-label');
+const lieuFormationClearBtn = document.getElementById('lieu-formation-clear');
+
+const autreLieuFormationSearch = document.getElementById('f-autre-lieu-formation-search');
+const autreLieuFormationAutocomplete = document.getElementById('autre-lieu-formation-autocomplete');
+const autreLieuFormationBadge = document.getElementById('autre-lieu-formation-selected-badge');
+const autreLieuFormationBadgeLabel = document.getElementById('autre-lieu-formation-selected-label');
+const autreLieuFormationClearBtn = document.getElementById('autre-lieu-formation-clear');
 
 const msgSaved = document.getElementById('msg-saved');
 const msgError = document.getElementById('msg-error');
@@ -399,6 +433,90 @@ function clearDepartement() {
 
 departementClearBtn.addEventListener('click', clearDepartement);
 
+/* ---------- Lieu de formation ---------- */
+
+function labelForLieu(l) {
+  const parts = [l.Code_Postal, l.Ville].filter(Boolean).join(' ');
+  return parts;
+}
+
+makeAutocomplete({
+  inputEl: lieuFormationSearch,
+  listEl: lieuFormationAutocomplete,
+  items: () => allLieux,
+  itemLabel: (l) => l.Nom_Lieu,
+  itemSub: (l) => labelForLieu(l),
+  onSelect: (l) => selectLieuFormation(l)
+});
+
+function selectLieuFormation(l) {
+  selectedLieuId = l.id;
+  lieuFormationSearch.value = '';
+  lieuFormationSearch.disabled = true;
+  lieuFormationBadgeLabel.textContent = l.Nom_Lieu + (labelForLieu(l) ? ' (' + labelForLieu(l) + ')' : '');
+  lieuFormationBadge.classList.add('show');
+  lieuFormationAutocomplete.style.display = 'none';
+  clearAutreLieuFormation();
+}
+
+function clearLieuFormation() {
+  selectedLieuId = null;
+  lieuFormationSearch.disabled = false;
+  lieuFormationSearch.value = '';
+  lieuFormationBadge.classList.remove('show');
+  lieuFormationBadgeLabel.textContent = '';
+}
+
+lieuFormationClearBtn.addEventListener('click', clearLieuFormation);
+
+makeAutocomplete({
+  inputEl: autreLieuFormationSearch,
+  listEl: autreLieuFormationAutocomplete,
+  items: () => allStructures,
+  itemLabel: (s) => s.Nom,
+  itemSub: (s) => labelForStruct(s),
+  onSelect: (s) => selectAutreLieuFormation(s)
+});
+
+function selectAutreLieuFormation(s) {
+  selectedAutreLieuStructureId = s.id;
+  autreLieuFormationSearch.value = '';
+  autreLieuFormationSearch.disabled = true;
+  autreLieuFormationBadgeLabel.textContent = s.Nom + (labelForStruct(s) ? ' (' + labelForStruct(s) + ')' : '');
+  autreLieuFormationBadge.classList.add('show');
+  autreLieuFormationAutocomplete.style.display = 'none';
+  clearLieuFormation();
+}
+
+function clearAutreLieuFormation() {
+  selectedAutreLieuStructureId = null;
+  autreLieuFormationSearch.disabled = false;
+  autreLieuFormationSearch.value = '';
+  autreLieuFormationBadge.classList.remove('show');
+  autreLieuFormationBadgeLabel.textContent = '';
+}
+
+autreLieuFormationClearBtn.addEventListener('click', clearAutreLieuFormation);
+
+async function resolveLieuFormationId() {
+  if (selectedLieuId) return selectedLieuId;
+  if (!selectedAutreLieuStructureId) return null;
+  const struct = allStructures.find(s => s.id === selectedAutreLieuStructureId);
+  if (!struct) return null;
+  const existing = allLieux.find(l => normalize(l.Nom_Lieu) === normalize(struct.Nom));
+  if (existing) return existing.id;
+  const result = await grist.docApi.applyUserActions([['AddRecord', 'Lieux', null, {
+    Nom_Lieu: struct.Nom,
+    Code_Postal: struct.Code_Postal || null,
+    Ville: struct.Commune || null
+  }]]);
+  const newId = result && result.retValues && result.retValues[0];
+  if (newId) {
+    allLieux.push({ id: newId, Nom_Lieu: struct.Nom, Code_Postal: struct.Code_Postal, Ville: struct.Commune });
+  }
+  return newId || null;
+}
+
 /* ---------- Prefill / Save / Load ---------- */
 
 function prefillFromRecord(record) {
@@ -439,6 +557,14 @@ function prefillFromRecord(record) {
     if (struct) selectUnite(struct);
   }
 
+  clearLieuFormation();
+  clearAutreLieuFormation();
+  const lieuId = toRowId(record.Lieu_Formation);
+  if (lieuId) {
+    const l = allLieux.find(x => x.id === lieuId);
+    if (l) selectLieuFormation(l);
+  }
+
   typeFormationSelect.value = record.Niveau_AFGSU || '';
 
   const isRecyclage = !!record.Date_Recyclage && !record.Date_Formation_Initiale;
@@ -453,6 +579,7 @@ btnSave.addEventListener('click', async () => {
     const uniteStruct = selectedUniteId ? allStructures.find(s => s.id === selectedUniteId) : null;
     const dateFormationTs = dateToTimestamp(fields.Date_Formation.value);
     const isRecyclage = recyclageCheckbox.checked;
+    const lieuFormationId = await resolveLieuFormationId();
 
     const values = {
       Nom: fields.Nom.value || null,
@@ -475,6 +602,7 @@ btnSave.addEventListener('click', async () => {
       Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
       Unite: autreAffectation ? null : selectedUniteId,
       Fonction: selectedFonctionId || null,
+      Lieu_Formation: lieuFormationId,
       Date_Formation_Initiale: isRecyclage ? null : dateFormationTs,
       Date_Recyclage: isRecyclage ? dateFormationTs : null
     };
@@ -502,7 +630,9 @@ async function loadData() {
       id,
       Nom: table.Nom[i],
       Categorie: table.Categorie[i],
-      Sous_Categorie: table.Sous_Categorie[i]
+      Sous_Categorie: table.Sous_Categorie[i],
+      Code_Postal: table.Code_Postal[i],
+      Commune: table.Commune[i]
     })).filter(s => s.Nom);
 
     try {
@@ -523,6 +653,18 @@ async function loadData() {
       })).filter(t => t.Type);
     } catch (e) {
       allTypesFormation = [];
+    }
+
+    try {
+      const lieuxTable = await grist.docApi.fetchTable('Lieux');
+      allLieux = lieuxTable.id.map((id, i) => ({
+        id,
+        Nom_Lieu: lieuxTable.Nom_Lieu[i],
+        Code_Postal: lieuxTable.Code_Postal[i],
+        Ville: lieuxTable.Ville[i]
+      })).filter(l => l.Nom_Lieu);
+    } catch (e) {
+      allLieux = [];
     }
 
     typeFormationSelect.innerHTML = '<option value="">-- Choisir un type de formation --</option>' +
