@@ -28,8 +28,12 @@ textarea { resize: vertical; min-height: 60px; font-family: inherit; }
 .error { margin-top: 10px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b; display: none; }
 #loading { text-align: center; color: #6b7280; font-size: 13px; padding: 20px; }
 #app { display: none; }
-button#btn-save { margin-top: 18px; width: 100%; padding: 10px 14px; background: #0f766e; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-button#btn-save:hover { background: #0d5f58; }
+#confirmation-screen { display: none; text-align: center; padding: 48px 12px; }
+#confirmation-screen .check-icon { font-size: 40px; color: #166534; margin-bottom: 12px; }
+#confirmation-screen .title { font-size: 15px; font-weight: 600; color: #166534; margin-bottom: 8px; }
+#confirmation-screen .summary { font-size: 13px; color: #374151; margin-bottom: 24px; }
+button#btn-save, button#btn-new-inscription { margin-top: 18px; width: 100%; padding: 10px 14px; background: #0f766e; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+button#btn-save:hover, button#btn-new-inscription:hover { background: #0d5f58; }
 button#btn-save:disabled { background: #9ca3af; cursor: not-allowed; }
 .autocomplete-list { position: absolute; top: calc(100% - 2px); left: 0; right: 0; z-index: 20; background: #fff; border: 1px solid #d1d5db; border-radius: 0 0 6px 6px; box-shadow: 0 10px 20px rgba(0,0,0,0.08); max-height: 220px; overflow-y: auto; display: none; }
 .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; border-top: 1px solid #f0f1f3; }
@@ -44,6 +48,12 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 </head>
 <body>
 <div id="loading">Chargement des donnees...</div>
+<div id="confirmation-screen">
+<div class="check-icon">&#10003;</div>
+<div class="title">Stagiaire enregistre avec succes</div>
+<div class="summary" id="confirmation-summary"></div>
+<button id="btn-new-inscription">Nouvelle inscription</button>
+</div>
 <div id="app">
 <h3>Identite</h3>
 <div class="row2">
@@ -215,6 +225,10 @@ const msgSaved = document.getElementById('msg-saved');
 const msgError = document.getElementById('msg-error');
 const btnSave = document.getElementById('btn-save');
 const recyclageCheckbox = document.getElementById('f-recyclage');
+const appEl = document.getElementById('app');
+const confirmationScreen = document.getElementById('confirmation-screen');
+const confirmationSummary = document.getElementById('confirmation-summary');
+const btnNewInscription = document.getElementById('btn-new-inscription');
 
 const fields = {
   Nom: document.getElementById('f-nom'),
@@ -234,10 +248,10 @@ const fields = {
   Notes: document.getElementById('f-notes')
 };
 
-function showMsg(el, txt) {
+function showMsg(el, txt, duration) {
   if (txt) el.textContent = txt;
   el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 3000);
+  setTimeout(() => { el.style.display = 'none'; }, duration || 3000);
 }
 
 function toRowId(val) {
@@ -519,6 +533,68 @@ async function resolveLieuFormationId() {
   return newId || null;
 }
 
+/* ---------- Validation ---------- */
+
+function getMissingFields() {
+  const missing = [];
+  if (!fields.Nom.value.trim()) missing.push('Nom');
+  if (!fields.Prenom.value.trim()) missing.push('Prenom');
+  if (!fields.Sexe.value) missing.push('Sexe');
+  if (!fields.Date_Naissance.value) missing.push('Date de naissance');
+  if (!fields.Lieu_Naissance.value.trim()) missing.push('Lieu de naissance');
+  if (!selectedDepartementCode) missing.push('Numero de departement');
+  if (!fields.Statut.value) missing.push('Statut');
+  if (!fields.Grade_Fonction.value.trim()) missing.push('Grade');
+  if (!selectedUniteId && !fields.Autre_Affectation.value.trim()) missing.push('Unite ou Autre affectation');
+  if (!selectedFonctionId && !fields.Autre_Fonction.value.trim()) missing.push('Fonction ou Autre fonction');
+  if (!fields.Email.value.trim()) missing.push('Email');
+  if (!fields.Telephone.value.trim()) missing.push('Telephone');
+  if (!typeFormationSelect.value) missing.push('Type de formation');
+  if (!selectedLieuId && !selectedAutreLieuStructureId) missing.push('Lieu de formation ou Autre lieu de formation');
+  if (!fields.Date_Formation.value) missing.push('Date de la formation');
+  return missing;
+}
+
+/* ---------- Reset / Confirmation ---------- */
+
+function resetForm() {
+  currentRowId = null;
+  fields.Nom.value = '';
+  fields.Prenom.value = '';
+  fields.Nom_Marital.value = '';
+  fields.Sexe.value = '';
+  fields.Date_Naissance.value = '';
+  fields.Lieu_Naissance.value = '';
+  fields.Statut.value = '';
+  fields.Grade_Fonction.value = '';
+  fields.Service_Affectation.value = '';
+  fields.Autre_Affectation.value = '';
+  fields.Autre_Fonction.value = '';
+  fields.Email.value = '';
+  fields.Telephone.value = '';
+  fields.Date_Formation.value = '';
+  fields.Notes.value = '';
+  clearDepartement();
+  clearFonction();
+  clearUnite();
+  clearLieuFormation();
+  clearAutreLieuFormation();
+  typeFormationSelect.value = '';
+  recyclageCheckbox.checked = false;
+}
+
+function showConfirmation(summaryText) {
+  appEl.style.display = 'none';
+  confirmationSummary.textContent = summaryText;
+  confirmationScreen.style.display = 'block';
+}
+
+btnNewInscription.addEventListener('click', () => {
+  resetForm();
+  confirmationScreen.style.display = 'none';
+  appEl.style.display = 'block';
+});
+
 /* ---------- Prefill / Save / Load ---------- */
 
 function prefillFromRecord(record) {
@@ -575,6 +651,12 @@ function prefillFromRecord(record) {
 }
 
 btnSave.addEventListener('click', async () => {
+  const missing = getMissingFields();
+  if (missing.length) {
+    showMsg(msgError, 'Champs manquants: ' + missing.join(', '), 6000);
+    return;
+  }
+
   btnSave.disabled = true;
   try {
     const autreAffectation = fields.Autre_Affectation.value.trim() || null;
@@ -617,7 +699,14 @@ btnSave.addEventListener('click', async () => {
         currentRowId = result.retValues[0];
       }
     }
-    showMsg(msgSaved);
+
+    const lieuLabel = selectedLieuId
+      ? (allLieux.find(l => l.id === selectedLieuId) || {}).Nom_Lieu
+      : (selectedAutreLieuStructureId ? (allStructures.find(s => s.id === selectedAutreLieuStructureId) || {}).Nom : '');
+    const summary = [fields.Nom.value, fields.Prenom.value].filter(Boolean).join(' ') +
+      (typeFormationSelect.value ? ' - ' + typeFormationSelect.value : '') +
+      (lieuLabel ? ' - ' + lieuLabel : '');
+    showConfirmation(summary);
   } catch (e) {
     showMsg(msgError, 'Erreur: ' + e.message);
   } finally {
@@ -673,7 +762,7 @@ async function loadData() {
       allTypesFormation.map(t => `<option value="${t.Type}">${t.Type}</option>`).join('');
 
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    appEl.style.display = 'block';
     dataLoaded = true;
 
     if (pendingRecord) {
