@@ -12,14 +12,16 @@ h3 { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercas
 .field { margin-bottom: 14px; position: relative; }
 label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 4px; }
 input:not([type="checkbox"]), select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; font-size: 14px; color: #1f2937; appearance: none; }
-input[type="checkbox"] { width: 16px; height: 16px; appearance: auto; accent-color: #111827; cursor: pointer; }
+input[type="checkbox"] { appearance: none; width: 18px; height: 18px; border: 1.5px solid #9ca3af; border-radius: 3px; background: #fff; position: relative; cursor: pointer; flex-shrink: 0; }
+input[type="checkbox"]:checked { background: #fff; border-color: #111827; }
+input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 9px; border: solid #111827; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,0.15); }
 select { cursor: pointer; }
 select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
 textarea { resize: vertical; min-height: 60px; font-family: inherit; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .checkbox-field { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.checkbox-field input { width: auto; }
+.checkbox-field input { width: 18px; }
 .badge { display: inline-block; margin-top: 4px; font-size: 11px; color: #6b7280; }
 .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
 .saved { margin-top: 10px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534; display: none; }
