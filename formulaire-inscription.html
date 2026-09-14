@@ -24,8 +24,8 @@ textarea { resize: vertical; min-height: 60px; font-family: inherit; }
 .checkbox-field input { width: 18px; }
 .badge { display: inline-block; margin-top: 4px; font-size: 11px; color: #6b7280; }
 .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
-.saved { margin-top: 10px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534; display: none; }
-.error { margin-top: 10px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b; display: none; }
+.saved { margin-bottom: 14px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534; display: none; }
+.error { margin-bottom: 14px; padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 13px; color: #991b1b; display: none; font-weight: 600; }
 #loading { text-align: center; color: #6b7280; font-size: 13px; padding: 20px; }
 #app { display: none; }
 #confirmation-screen { display: none; text-align: center; padding: 48px 12px; }
@@ -55,6 +55,8 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <button id="btn-new-inscription">Nouvelle inscription</button>
 </div>
 <div id="app">
+<div id="msg-saved" class="saved">Enregistre avec succes.</div>
+<div id="msg-error" class="error">Erreur.</div>
 <h3>Identite</h3>
 <div class="row2">
 <div class="field"><label>Nom</label><input id="f-nom" type="text" /></div>
@@ -147,8 +149,6 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div class="field"><textarea id="f-notes"></textarea></div>
 
 <button id="btn-save">Enregistrer</button>
-<div id="msg-saved" class="saved">Enregistre avec succes.</div>
-<div id="msg-error" class="error">Erreur.</div>
 </div>
 
 <script>
@@ -251,7 +251,9 @@ const fields = {
 function showMsg(el, txt, duration) {
   if (txt) el.textContent = txt;
   el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, duration || 3000);
+  if (duration !== null) {
+    setTimeout(() => { el.style.display = 'none'; }, duration || 3000);
+  }
 }
 
 function toRowId(val) {
@@ -581,6 +583,8 @@ function resetForm() {
   clearAutreLieuFormation();
   typeFormationSelect.value = '';
   recyclageCheckbox.checked = false;
+  msgError.style.display = 'none';
+  msgSaved.style.display = 'none';
 }
 
 function showConfirmation(summaryText) {
@@ -653,9 +657,10 @@ function prefillFromRecord(record) {
 btnSave.addEventListener('click', async () => {
   const missing = getMissingFields();
   if (missing.length) {
-    showMsg(msgError, 'Champs manquants: ' + missing.join(', '), 6000);
+    showMsg(msgError, 'Champs manquants: ' + missing.join(', '), null);
     return;
   }
+  msgError.style.display = 'none';
 
   btnSave.disabled = true;
   try {
@@ -708,7 +713,7 @@ btnSave.addEventListener('click', async () => {
       (lieuLabel ? ' - ' + lieuLabel : '');
     showConfirmation(summary);
   } catch (e) {
-    showMsg(msgError, 'Erreur: ' + e.message);
+    showMsg(msgError, 'Erreur: ' + e.message, null);
   } finally {
     btnSave.disabled = false;
   }
