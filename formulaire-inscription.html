@@ -781,12 +781,10 @@ async function loadData() {
 
 grist.ready({ requiredAccess: 'full' });
 grist.onRecord(function(record) {
-  currentRowId = record.id;
   if (!dataLoaded) {
+    currentRowId = record.id;
     pendingRecord = record;
     loadData();
-  } else {
-    prefillFromRecord(record);
   }
 });
 </script>
