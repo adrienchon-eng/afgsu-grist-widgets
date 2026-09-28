@@ -126,22 +126,13 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div class="field"><label>Type de formation</label><select id="f-type-formation-select"><option value="">-- Choisir un type de formation --</option></select></div>
 <div class="field" id="lieu-formation-field">
 <label>Lieu de formation</label>
-<input id="f-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom du lieu..." />
+<input id="f-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom du lieu ou de l'unite (ex. Centre medical des armees)..." />
 <div id="lieu-formation-autocomplete" class="autocomplete-list"></div>
 <div class="selected-badge" id="lieu-formation-selected-badge">
   <span id="lieu-formation-selected-label"></span>
   <button type="button" id="lieu-formation-clear">&times;</button>
 </div>
-<div class="hint">Si le lieu n'existe pas encore, utilisez "Autre lieu de formation" ci-dessous.</div>
-</div>
-<div class="field" id="autre-lieu-formation-field">
-<label>Autre lieu de formation (unite non encore enregistree comme lieu)</label>
-<input id="f-autre-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom de l'unite..." />
-<div id="autre-lieu-formation-autocomplete" class="autocomplete-list"></div>
-<div class="selected-badge" id="autre-lieu-formation-selected-badge">
-  <span id="autre-lieu-formation-selected-label"></span>
-  <button type="button" id="autre-lieu-formation-clear">&times;</button>
-</div>
+<div class="hint">La recherche couvre a la fois les lieux de formation deja enregistres et toutes les unites (CMA, etc.). Si l'unite choisie n'est pas encore un lieu, elle sera ajoutee automatiquement.</div>
 </div>
 <div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
 
@@ -213,12 +204,6 @@ const lieuFormationAutocomplete = document.getElementById('lieu-formation-autoco
 const lieuFormationBadge = document.getElementById('lieu-formation-selected-badge');
 const lieuFormationBadgeLabel = document.getElementById('lieu-formation-selected-label');
 const lieuFormationClearBtn = document.getElementById('lieu-formation-clear');
-
-const autreLieuFormationSearch = document.getElementById('f-autre-lieu-formation-search');
-const autreLieuFormationAutocomplete = document.getElementById('autre-lieu-formation-autocomplete');
-const autreLieuFormationBadge = document.getElementById('autre-lieu-formation-selected-badge');
-const autreLieuFormationBadgeLabel = document.getElementById('autre-lieu-formation-selected-label');
-const autreLieuFormationClearBtn = document.getElementById('autre-lieu-formation-clear');
 
 const msgSaved = document.getElementById('msg-saved');
 const msgError = document.getElementById('msg-error');
@@ -450,34 +435,59 @@ function clearDepartement() {
 
 departementClearBtn.addEventListener('click', clearDepartement);
 
-/* ---------- Lieu de formation ---------- */
+/* ---------- Lieu de formation (fusion Lieux + Structures) ---------- */
 
 function labelForLieu(l) {
   const parts = [l.Code_Postal, l.Ville].filter(Boolean).join(' ');
   return parts;
 }
 
+function buildLieuFormationOptions() {
+  const lieuNames = new Set(allLieux.map(l => normalize(l.Nom_Lieu)));
+  const lieuOptions = allLieux.map(l => ({
+    type: 'lieu',
+    id: l.id,
+    label: l.Nom_Lieu,
+    sub: labelForLieu(l)
+  }));
+  const structureOptions = allStructures
+    .filter(s => !lieuNames.has(normalize(s.Nom)))
+    .map(s => ({
+      type: 'structure',
+      id: s.id,
+      label: s.Nom,
+      sub: labelForStruct(s) ? labelForStruct(s) + ' - unite' : 'Unite'
+    }));
+  return [...lieuOptions, ...structureOptions];
+}
+
 makeAutocomplete({
   inputEl: lieuFormationSearch,
   listEl: lieuFormationAutocomplete,
-  items: () => allLieux,
-  itemLabel: (l) => l.Nom_Lieu,
-  itemSub: (l) => labelForLieu(l),
-  onSelect: (l) => selectLieuFormation(l)
+  items: () => buildLieuFormationOptions(),
+  itemLabel: (item) => item.label,
+  itemSub: (item) => item.sub,
+  onSelect: (item) => selectLieuFormation(item)
 });
 
-function selectLieuFormation(l) {
-  selectedLieuId = l.id;
+function selectLieuFormation(item) {
   lieuFormationSearch.value = '';
   lieuFormationSearch.disabled = true;
-  lieuFormationBadgeLabel.textContent = l.Nom_Lieu + (labelForLieu(l) ? ' (' + labelForLieu(l) + ')' : '');
+  lieuFormationBadgeLabel.textContent = item.label + (item.sub ? ' (' + item.sub + ')' : '');
   lieuFormationBadge.classList.add('show');
   lieuFormationAutocomplete.style.display = 'none';
-  clearAutreLieuFormation();
+  if (item.type === 'lieu') {
+    selectedLieuId = item.id;
+    selectedAutreLieuStructureId = null;
+  } else {
+    selectedAutreLieuStructureId = item.id;
+    selectedLieuId = null;
+  }
 }
 
 function clearLieuFormation() {
   selectedLieuId = null;
+  selectedAutreLieuStructureId = null;
   lieuFormationSearch.disabled = false;
   lieuFormationSearch.value = '';
   lieuFormationBadge.classList.remove('show');
@@ -485,35 +495,6 @@ function clearLieuFormation() {
 }
 
 lieuFormationClearBtn.addEventListener('click', clearLieuFormation);
-
-makeAutocomplete({
-  inputEl: autreLieuFormationSearch,
-  listEl: autreLieuFormationAutocomplete,
-  items: () => allStructures,
-  itemLabel: (s) => s.Nom,
-  itemSub: (s) => labelForStruct(s),
-  onSelect: (s) => selectAutreLieuFormation(s)
-});
-
-function selectAutreLieuFormation(s) {
-  selectedAutreLieuStructureId = s.id;
-  autreLieuFormationSearch.value = '';
-  autreLieuFormationSearch.disabled = true;
-  autreLieuFormationBadgeLabel.textContent = s.Nom + (labelForStruct(s) ? ' (' + labelForStruct(s) + ')' : '');
-  autreLieuFormationBadge.classList.add('show');
-  autreLieuFormationAutocomplete.style.display = 'none';
-  clearLieuFormation();
-}
-
-function clearAutreLieuFormation() {
-  selectedAutreLieuStructureId = null;
-  autreLieuFormationSearch.disabled = false;
-  autreLieuFormationSearch.value = '';
-  autreLieuFormationBadge.classList.remove('show');
-  autreLieuFormationBadgeLabel.textContent = '';
-}
-
-autreLieuFormationClearBtn.addEventListener('click', clearAutreLieuFormation);
 
 async function resolveLieuFormationId() {
   if (selectedLieuId) return selectedLieuId;
@@ -551,7 +532,7 @@ function getMissingFields() {
   if (!fields.Email.value.trim()) missing.push('Email');
   if (!fields.Telephone.value.trim()) missing.push('Telephone');
   if (!typeFormationSelect.value) missing.push('Type de formation');
-  if (!selectedLieuId && !selectedAutreLieuStructureId) missing.push('Lieu de formation ou Autre lieu de formation');
+  if (!selectedLieuId && !selectedAutreLieuStructureId) missing.push('Lieu de formation');
   if (!fields.Date_Formation.value) missing.push('Date de la formation');
   return missing;
 }
@@ -579,7 +560,6 @@ function resetForm() {
   clearFonction();
   clearUnite();
   clearLieuFormation();
-  clearAutreLieuFormation();
   typeFormationSelect.value = '';
   recyclageCheckbox.checked = false;
   msgError.style.display = 'none';
@@ -642,11 +622,10 @@ function prefillFromRecord(record) {
   }
 
   clearLieuFormation();
-  clearAutreLieuFormation();
   const lieuId = toRowId(record.Lieu_Formation);
   if (lieuId) {
     const l = allLieux.find(x => x.id === lieuId);
-    if (l) selectLieuFormation(l);
+    if (l) selectLieuFormation({ type: 'lieu', id: l.id, label: l.Nom_Lieu, sub: labelForLieu(l) });
   }
 
   typeFormationSelect.value = record.Niveau_AFGSU || '';
