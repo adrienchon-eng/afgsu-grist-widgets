@@ -50,12 +50,12 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div id="loading">Chargement des donnees...</div>
 <div id="confirmation-screen">
 <div class="check-icon">&#10003;</div>
-<div class="title">Stagiaire enregistre avec succes</div>
+<div class="title">Stagiaire inscrit avec succes</div>
 <div class="summary" id="confirmation-summary"></div>
 <button id="btn-new-inscription">Nouvelle inscription</button>
 </div>
 <div id="app">
-<div id="msg-saved" class="saved">Enregistre avec succes.</div>
+<div id="msg-saved" class="saved">Inscrit avec succes.</div>
 <div id="msg-error" class="error">Erreur.</div>
 <h3>Identite</h3>
 <div class="row2">
@@ -157,7 +157,6 @@ let allFonctions = [];
 let allTypesFormation = [];
 let allLieux = [];
 let currentRowId = null;
-let pendingRecord = null;
 let dataLoaded = false;
 let selectedUniteId = null;
 let selectedFonctionId = null;
@@ -600,6 +599,9 @@ btnNewInscription.addEventListener('click', () => {
 });
 
 /* ---------- Prefill / Save / Load ---------- */
+/* prefillFromRecord() est conservee pour un usage futur (recherche d'un
+   stagiaire existant avant creation), mais n'est plus appelee automatiquement
+   au chargement du widget afin d'eviter d'ecraser une inscription existante. */
 
 function prefillFromRecord(record) {
   if (!record || !dataLoaded) return;
@@ -769,24 +771,13 @@ async function loadData() {
     document.getElementById('loading').style.display = 'none';
     appEl.style.display = 'block';
     dataLoaded = true;
-
-    if (pendingRecord) {
-      prefillFromRecord(pendingRecord);
-      pendingRecord = null;
-    }
   } catch (e) {
     document.getElementById('loading').textContent = 'Erreur chargement: ' + e.message;
   }
 }
 
 grist.ready({ requiredAccess: 'full' });
-grist.onRecord(function(record) {
-  if (!dataLoaded) {
-    currentRowId = record.id;
-    pendingRecord = record;
-    loadData();
-  }
-});
+loadData();
 </script>
 </body>
 </html>
