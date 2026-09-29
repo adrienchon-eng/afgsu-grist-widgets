@@ -16,6 +16,9 @@ input[type="checkbox"] { appearance: none; width: 18px; height: 18px; border: 1.
 input[type="checkbox"]:checked { background: #fff; border-color: #111827; }
 input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 5px; top: 1px; width: 5px; height: 9px; border: solid #111827; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,0.15); }
+input.invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.12); }
+.field-error { display: none; font-size: 11px; color: #b91c1c; margin-top: 4px; }
+.field-error.show { display: block; }
 select { cursor: pointer; }
 select:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
 textarea { resize: vertical; min-height: 60px; font-family: inherit; }
@@ -57,6 +60,7 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div id="app">
 <div id="msg-saved" class="saved">Inscrit avec succes.</div>
 <div id="msg-error" class="error">Erreur.</div>
+<div class="hint" style="margin-bottom:8px;">Tous les champs sont obligatoires, sauf "Nom marital" et "Notes".</div>
 <h3>Identite</h3>
 <div class="row2">
 <div class="field"><label>Nom</label><input id="f-nom" type="text" /></div>
@@ -67,7 +71,7 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
   <button type="button" id="match-clear">&times;</button>
 </div>
 <div class="row2">
-<div class="field"><label>Nom marital</label><input id="f-nom-marital" type="text" /></div>
+<div class="field"><label>Nom marital (facultatif)</label><input id="f-nom-marital" type="text" /></div>
 <div class="field"><label>Sexe</label><select id="f-sexe"><option value="">--</option><option value="M">M</option><option value="F">F</option></select></div>
 </div>
 <div class="row2">
@@ -91,7 +95,7 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <h3>Affectation</h3>
 <div class="field" id="unite-field">
 <label>Unite d'affectation</label>
-<input id="f-unite-search" type="text" autocomplete="off" placeholder="Tapez le nom de l'unite..." />
+<input id="f-unite-search" type="text" autocomplete="off" placeholder="Tapez le nom de l'unite, la ville ou le code postal..." />
 <div id="unite-autocomplete" class="autocomplete-list"></div>
 <div class="selected-badge" id="unite-selected-badge">
   <span id="unite-selected-label"></span>
@@ -121,8 +125,8 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 
 <h3>Contact</h3>
 <div class="row2">
-<div class="field"><label>Email</label><input id="f-email" type="email" /></div>
-<div class="field"><label>Telephone</label><input id="f-telephone" type="text" /></div>
+<div class="field"><label>Email</label><input id="f-email" type="text" inputmode="email" autocomplete="off" placeholder="nom@domaine.fr" /><div class="field-error" id="err-email">Format invalide. Exemple attendu : nom@domaine.fr</div></div>
+<div class="field"><label>Telephone</label><input id="f-telephone" type="tel" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="10 chiffres, ex. 0612345678" /><div class="field-error" id="err-telephone">Le numero doit comporter exactement 10 chiffres.</div></div>
 </div>
 
 <h3>Formation AFGSU</h3>
@@ -130,17 +134,17 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div class="field"><label>Type de formation</label><select id="f-type-formation-select"><option value="">-- Choisir un type de formation --</option></select></div>
 <div class="field" id="lieu-formation-field">
 <label>Lieu de formation</label>
-<input id="f-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom du lieu ou de l'unite (ex. Centre medical des armees)..." />
+<input id="f-lieu-formation-search" type="text" autocomplete="off" placeholder="Tapez le nom du lieu, de l'unite ou de la ville..." />
 <div id="lieu-formation-autocomplete" class="autocomplete-list"></div>
 <div class="selected-badge" id="lieu-formation-selected-badge">
   <span id="lieu-formation-selected-label"></span>
   <button type="button" id="lieu-formation-clear">&times;</button>
 </div>
-<div class="hint">La recherche couvre a la fois les lieux de formation deja enregistres et toutes les unites (CMA, etc.). Si l'unite choisie n'est pas encore un lieu, elle sera ajoutee automatiquement.</div>
+<div class="hint">La recherche couvre les lieux de formation enregistres et toutes les unites (par nom, ville ou code postal). Si l'unite choisie n'est pas encore un lieu, elle sera ajoutee automatiquement.</div>
 </div>
 <div class="field"><label>Date de la formation</label><input id="f-date-formation" type="date" /></div>
 
-<h3>Notes</h3>
+<h3>Notes (facultatif)</h3>
 <div class="field"><textarea id="f-notes"></textarea></div>
 
 <button id="btn-save">Enregistrer</button>
@@ -222,6 +226,8 @@ const btnNewInscription = document.getElementById('btn-new-inscription');
 const matchBadge = document.getElementById('match-badge');
 const matchBadgeLabel = document.getElementById('match-badge-label');
 const matchClearBtn = document.getElementById('match-clear');
+const errEmail = document.getElementById('err-email');
+const errTelephone = document.getElementById('err-telephone');
 
 const fields = {
   Nom: document.getElementById('f-nom'),
@@ -314,7 +320,8 @@ function makeAutocomplete(opts) {
   function filter(term) {
     const t = normalize(term);
     if (!t) { render([]); return; }
-    const matches = opts.items().filter(it => normalize(opts.itemLabel(it)).includes(t)).slice(0, 40);
+    const textOf = opts.searchText || opts.itemLabel;
+    const matches = opts.items().filter(it => normalize(textOf(it)).includes(t)).slice(0, 40);
     render(matches);
   }
 
@@ -346,8 +353,13 @@ function makeAutocomplete(opts) {
 /* ---------- Unite ---------- */
 
 function labelForStruct(s) {
-  const parts = [s.Categorie, s.Sous_Categorie].filter(Boolean).join(' / ');
-  return parts ? parts : '';
+  const cat = [s.Categorie, s.Sous_Categorie].filter(Boolean).join(' / ');
+  const place = [s.Code_Postal, s.Commune].filter(Boolean).join(' ');
+  return [cat, place].filter(Boolean).join(' - ');
+}
+
+function searchTextStruct(s) {
+  return [s.Nom, s.Commune, s.Code_Postal, s.Categorie, s.Sous_Categorie].filter(Boolean).join(' ');
 }
 
 makeAutocomplete({
@@ -356,6 +368,7 @@ makeAutocomplete({
   items: () => allStructures,
   itemLabel: (s) => s.Nom,
   itemSub: (s) => labelForStruct(s),
+  searchText: searchTextStruct,
   onSelect: (s) => selectUnite(s)
 });
 
@@ -447,8 +460,7 @@ departementClearBtn.addEventListener('click', clearDepartement);
 /* ---------- Lieu de formation (fusion Lieux + Structures) ---------- */
 
 function labelForLieu(l) {
-  const parts = [l.Code_Postal, l.Ville].filter(Boolean).join(' ');
-  return parts;
+  return [l.Code_Postal, l.Ville].filter(Boolean).join(' ');
 }
 
 function buildLieuFormationOptions() {
@@ -457,7 +469,8 @@ function buildLieuFormationOptions() {
     type: 'lieu',
     id: l.id,
     label: l.Nom_Lieu,
-    sub: labelForLieu(l)
+    sub: labelForLieu(l),
+    search: [l.Nom_Lieu, l.Ville, l.Code_Postal].filter(Boolean).join(' ')
   }));
   const structureOptions = allStructures
     .filter(s => !lieuNames.has(normalize(s.Nom)))
@@ -465,7 +478,8 @@ function buildLieuFormationOptions() {
       type: 'structure',
       id: s.id,
       label: s.Nom,
-      sub: labelForStruct(s) ? labelForStruct(s) + ' - unite' : 'Unite'
+      sub: labelForStruct(s) ? labelForStruct(s) + ' - unite' : 'Unite',
+      search: searchTextStruct(s)
     }));
   return [...lieuOptions, ...structureOptions];
 }
@@ -476,6 +490,7 @@ makeAutocomplete({
   items: () => buildLieuFormationOptions(),
   itemLabel: (item) => item.label,
   itemSub: (item) => item.sub,
+  searchText: (item) => item.search || item.label,
   onSelect: (item) => selectLieuFormation(item)
 });
 
@@ -610,6 +625,52 @@ matchClearBtn.addEventListener('click', () => {
 
 /* ---------- Validation ---------- */
 
+const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}$/;
+const PHONE_RE = /^[0-9]{10}$/;
+
+function cleanPhone(v) {
+  return (v || '').replace(/[\s.\-]/g, '');
+}
+
+function isValidEmail(v) {
+  return EMAIL_RE.test((v || '').trim());
+}
+
+function isValidPhone(v) {
+  return PHONE_RE.test(cleanPhone(v));
+}
+
+function refreshEmailState(showEmpty) {
+  const v = fields.Email.value.trim();
+  const bad = (v || showEmpty) && !isValidEmail(v);
+  fields.Email.classList.toggle('invalid', !!bad);
+  errEmail.classList.toggle('show', !!bad);
+  return !bad;
+}
+
+function refreshPhoneState(showEmpty) {
+  const v = fields.Telephone.value.trim();
+  const bad = (v || showEmpty) && !isValidPhone(v);
+  fields.Telephone.classList.toggle('invalid', !!bad);
+  errTelephone.classList.toggle('show', !!bad);
+  return !bad;
+}
+
+fields.Email.addEventListener('blur', () => {
+  fields.Email.value = fields.Email.value.trim();
+  refreshEmailState(false);
+});
+fields.Email.addEventListener('input', () => {
+  if (fields.Email.classList.contains('invalid')) refreshEmailState(false);
+});
+fields.Telephone.addEventListener('blur', () => {
+  fields.Telephone.value = cleanPhone(fields.Telephone.value);
+  refreshPhoneState(false);
+});
+fields.Telephone.addEventListener('input', () => {
+  if (fields.Telephone.classList.contains('invalid')) refreshPhoneState(false);
+});
+
 function getMissingFields() {
   const missing = [];
   if (!fields.Nom.value.trim()) missing.push('Nom');
@@ -621,9 +682,12 @@ function getMissingFields() {
   if (!fields.Statut.value) missing.push('Statut');
   if (!fields.Grade_Fonction.value.trim()) missing.push('Grade');
   if (!selectedUniteId && !fields.Autre_Affectation.value.trim()) missing.push('Unite ou Autre affectation');
+  if (!fields.Service_Affectation.value.trim()) missing.push("Service d'affectation");
   if (!selectedFonctionId && !fields.Autre_Fonction.value.trim()) missing.push('Fonction ou Autre fonction');
   if (!fields.Email.value.trim()) missing.push('Email');
+  else if (!isValidEmail(fields.Email.value)) missing.push('Email (format invalide, ex. nom@domaine.fr)');
   if (!fields.Telephone.value.trim()) missing.push('Telephone');
+  else if (!isValidPhone(fields.Telephone.value)) missing.push('Telephone (10 chiffres exactement)');
   if (!typeFormationSelect.value) missing.push('Type de formation');
   if (!selectedLieuId && !selectedAutreLieuStructureId) missing.push('Lieu de formation');
   if (!fields.Date_Formation.value) missing.push('Date de la formation');
@@ -649,6 +713,10 @@ function resetForm() {
   fields.Autre_Fonction.value = '';
   fields.Email.value = '';
   fields.Telephone.value = '';
+  fields.Email.classList.remove('invalid');
+  fields.Telephone.classList.remove('invalid');
+  errEmail.classList.remove('show');
+  errTelephone.classList.remove('show');
   fields.Date_Formation.value = '';
   fields.Notes.value = '';
   clearDepartement();
@@ -674,9 +742,14 @@ btnNewInscription.addEventListener('click', () => {
 });
 
 btnSave.addEventListener('click', async () => {
+  fields.Telephone.value = cleanPhone(fields.Telephone.value);
+  fields.Email.value = fields.Email.value.trim();
+  refreshEmailState(true);
+  refreshPhoneState(true);
+
   const missing = getMissingFields();
   if (missing.length) {
-    showMsg(msgError, 'Champs manquants: ' + missing.join(', '), null);
+    showMsg(msgError, 'Champs manquants ou invalides: ' + missing.join(', '), null);
     return;
   }
   msgError.style.display = 'none';
@@ -705,8 +778,8 @@ btnSave.addEventListener('click', async () => {
       Service_Affectation: fields.Service_Affectation.value || null,
       Autre_Affectation: autreAffectation,
       Autre_Fonction: fields.Autre_Fonction.value.trim() || null,
-      Email: fields.Email.value || null,
-      Telephone: fields.Telephone.value || null,
+      Email: fields.Email.value.trim() || null,
+      Telephone: cleanPhone(fields.Telephone.value) || null,
       Notes: fields.Notes.value || null,
       Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Categorie : null),
       Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
