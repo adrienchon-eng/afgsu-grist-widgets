@@ -757,7 +757,6 @@ btnSave.addEventListener('click', async () => {
   btnSave.disabled = true;
   try {
     const autreAffectation = fields.Autre_Affectation.value.trim() || null;
-    const uniteStruct = selectedUniteId ? allStructures.find(s => s.id === selectedUniteId) : null;
     const dateFormationTs = dateToTimestamp(fields.Date_Formation.value);
     const isRecyclage = recyclageCheckbox.checked;
     const lieuFormationId = await resolveLieuFormationId();
@@ -781,8 +780,8 @@ btnSave.addEventListener('click', async () => {
       Email: fields.Email.value.trim() || null,
       Telephone: cleanPhone(fields.Telephone.value) || null,
       Notes: fields.Notes.value || null,
-      Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Categorie : null),
-      Sous_Categorie_Unite: autreAffectation ? null : (uniteStruct ? uniteStruct.Sous_Categorie : null),
+      // Categorie_Unite et Sous_Categorie_Unite sont des colonnes calculees dans Grist
+      // (depuis Unite, vides si Autre_Affectation) : le formulaire ne les ecrit plus.
       Unite: autreAffectation ? null : selectedUniteId,
       Fonction: selectedFonctionId || null
     };
