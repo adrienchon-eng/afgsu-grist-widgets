@@ -6,6 +6,19 @@
   <title>AFGSU Manager - Widget Fonctions</title>
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <style>
+  /* --- Correctif 2026-10-13 : lisibilité des champs de saisie ----------------
+     Grist impose color-scheme:dark au widget quand l'interface est en thème
+     sombre (ou suit le thème sombre de macOS) : le navigateur écrit alors le
+     texte des champs (dont les dates) en blanc, invisible sur fond blanc.
+     On force le thème clair et des couleurs explicites. */
+  html{color-scheme:light !important}
+  input,select,textarea{color:#1d2433;background-color:#fff}
+  input::placeholder,textarea::placeholder{color:#6b7280;opacity:1}
+  input[type=date]::-webkit-datetime-edit,
+  input[type=date]::-webkit-datetime-edit-fields-wrapper{color:#1d2433}
+  input[type=date]::-webkit-calendar-picker-indicator{opacity:.75;cursor:pointer}
+  /* --- fin du correctif --------------------------------------------------- */
+
     :root {
       --bg: #f6f7f9;
       --panel: #ffffff;
