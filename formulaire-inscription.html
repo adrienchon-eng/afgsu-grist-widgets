@@ -178,6 +178,18 @@ let selectedLieuId = null;
 let selectedAutreLieuStructureId = null;
 let matchLocked = false;
 
+/* ---------- Mode public : inscription sans compte Grist ----------
+   Adresse : formulaire-inscription.html?f=<cle du formulaire Grist>/<numero de section>
+   Les listes (unites, fonctions, formations, lieux) viennent du formulaire Grist publie ; la demande est
+   deposee dans la table d'attente (Inscriptions_En_Attente) et validee ensuite dans AFGSU Manager.
+   Aucune donnee personnelle du document n'est lue dans ce mode. */
+const GRIST_URL = 'https://grist.numerique.gouv.fr';
+const PUBLIC_FORM = (function () {
+  const m = /[?&]f=([A-Za-z0-9_-]+)\/(\d+)/.exec(location.search);
+  return m ? { key: m[1], vs: m[2] } : null;
+})();
+let publicTableId = 'Inscriptions_En_Attente';
+
 const DEPARTEMENTS = [
   ['01','Ain'],['02','Aisne'],['03','Allier'],['04','Alpes-de-Haute-Provence'],['05','Hautes-Alpes'],
   ['06','Alpes-Maritimes'],['07',"Ardeche"],['08','Ardennes'],['09','Ariege'],['10','Aube'],
@@ -477,6 +489,9 @@ function labelForLieu(l) {
 }
 
 function buildLieuFormationOptions() {
+  if (PUBLIC_FORM) {
+    return allLieux.map(l => ({ type: 'lieu', id: l.id, label: l.Nom_Lieu, sub: labelForLieu(l), search: [l.Nom_Lieu, l.Ville, l.Code_Postal].filter(Boolean).join(' ') }));
+  }
   const lieuNames = new Set(allLieux.map(l => normalize(l.Nom_Lieu)));
   const lieuOptions = allLieux.map(l => ({
     type: 'lieu',
@@ -754,6 +769,66 @@ btnNewInscription.addEventListener('click', () => {
   appEl.style.display = 'block';
 });
 
+async function loadPublic() {
+  try {
+    const r = await fetch(GRIST_URL + '/api/s/' + PUBLIC_FORM.key + '/forms/' + PUBLIC_FORM.vs);
+    if (!r.ok) throw new Error(r.status === 404 ? 'ce lien d\'inscription n\'est plus valide' : 'reponse ' + r.status);
+    const form = await r.json();
+    publicTableId = form.formTableId || publicTableId;
+    const refs = {};
+    Object.keys(form.formFieldsById || {}).forEach(k => { const f = form.formFieldsById[k]; refs[f.colId] = f.refValues || []; });
+    const part = (label, i) => String(label == null ? '' : label).split(' | ')[i] || '';
+    allStructures = (refs.Unite || []).map(v => {
+      const cat = part(v[1], 1).split(' / '), place = part(v[1], 2), cp = (/^\d{4,5}/.exec(place) || [''])[0];
+      return { id: v[0], Nom: part(v[1], 0), Categorie: cat[0] || '', Sous_Categorie: cat[1] || '', Code_Postal: cp, Commune: place.slice(cp.length).trim() };
+    }).filter(x => x.Nom);
+    allFonctions = (refs.Fonction || []).map(v => ({ id: v[0], Fonctions: String(v[1] || '') })).filter(x => x.Fonctions);
+    allTypesFormation = (refs.Formation || []).map(v => ({ id: v[0], Type: String(v[1] || '') })).filter(x => x.Type);
+    allLieux = (refs.Lieu || []).filter(v => part(v[1], 2) !== 'inactif').map(v => {
+      const place = part(v[1], 1), cp = (/^\d{4,5}/.exec(place) || [''])[0];
+      return { id: v[0], Nom_Lieu: part(v[1], 0), Code_Postal: cp, Ville: place.slice(cp.length).trim() };
+    }).filter(x => x.Nom_Lieu);
+    allStagiairesCache = [];
+    typeFormationSelect.innerHTML = '<option value="">-- Choisir un type de formation --</option>' +
+      allTypesFormation.map(t => `<option value="${t.Type}">${t.Type}</option>`).join('');
+    document.getElementById('loading').style.display = 'none';
+    appEl.style.display = 'block';
+    dataLoaded = true;
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Formulaire indisponible : ' + e.message + '. Signalez-le a votre formateur.';
+  }
+}
+
+async function savePublic() {
+  const type = allTypesFormation.find(t => t.Type === typeFormationSelect.value);
+  const lieu = allLieux.find(l => l.id === selectedLieuId);
+  const autre = fields.Autre_Affectation.value.trim();
+  const rec = {
+    Nom: fields.Nom.value.trim(), Prenom: fields.Prenom.value.trim(), Nom_Marital: fields.Nom_Marital.value.trim(),
+    Sexe: fields.Sexe.value, Date_Naissance: fields.Date_Naissance.value, Lieu_Naissance: fields.Lieu_Naissance.value.trim(),
+    Departement_de_Naissance: selectedDepartementCode || '', Statut: fields.Statut.value, Grade_Fonction: fields.Grade_Fonction.value.trim(),
+    Service_Affectation: fields.Service_Affectation.value.trim(),
+    // Exclusivite : une unite du referentiel OU une affectation libre, jamais les deux.
+    Unite: autre ? null : selectedUniteId, Autre_Affectation: autre,
+    Fonction: selectedFonctionId || null, Autre_Fonction: selectedFonctionId ? '' : fields.Autre_Fonction.value.trim(),
+    Email: fields.Email.value.trim().toLowerCase(), Telephone: cleanPhone(fields.Telephone.value),
+    Formation: type ? type.id : null, Recyclage: recyclageCheckbox.checked, Lieu: lieu ? lieu.id : null,
+    Date_Formation: fields.Date_Formation.value, Notes: fields.Notes.value.trim()
+  };
+  Object.keys(rec).forEach(k => { if (rec[k] === null || rec[k] === '') delete rec[k]; });
+  const r = await fetch(GRIST_URL + '/api/s/' + PUBLIC_FORM.key + '/tables/' + publicTableId + '/records', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: [{ fields: rec }] })
+  });
+  if (!r.ok) {
+    let detail = '';
+    try { detail = (await r.json()).error || ''; } catch (e) { detail = ''; }
+    throw new Error('la demande n\'a pas pu etre enregistree (' + r.status + (detail ? ' : ' + detail : '') + ')');
+  }
+  showConfirmation([fields.Nom.value, fields.Prenom.value].filter(Boolean).join(' ') +
+    (type ? ' - ' + type.Type : '') + (lieu ? ' - ' + lieu.Nom_Lieu : '') +
+    '. Votre demande est transmise : elle sera validee par l\'equipe de formation.');
+}
+
 btnSave.addEventListener('click', async () => {
   fields.Telephone.value = cleanPhone(fields.Telephone.value);
   fields.Email.value = fields.Email.value.trim();
@@ -768,6 +843,12 @@ btnSave.addEventListener('click', async () => {
   msgError.style.display = 'none';
 
   btnSave.disabled = true;
+  if (PUBLIC_FORM) {
+    try { await savePublic(); }
+    catch (e) { showMsg(msgError, 'Erreur : ' + e.message, null); }
+    finally { btnSave.disabled = false; }
+    return;
+  }
   try {
     const autreAffectation = fields.Autre_Affectation.value.trim() || null;
     const dateFormationTs = dateToTimestamp(fields.Date_Formation.value);
@@ -845,6 +926,7 @@ async function loadStagiairesCache() {
 }
 
 async function loadData() {
+  if (PUBLIC_FORM) return loadPublic();
   try {
     const table = await grist.docApi.fetchTable('Structures');
     allStructures = table.id.map((id, i) => ({
@@ -901,7 +983,11 @@ async function loadData() {
   }
 }
 
-grist.ready({ requiredAccess: 'full' });
+if (!PUBLIC_FORM) grist.ready({ requiredAccess: 'full' });
+if (PUBLIC_FORM) {
+  // Une seule inscription par envoi : le bouton « nouvelle inscription » recharge un formulaire vide.
+  document.title = 'Inscription aux formations AFGSU';
+}
 loadData();
 </script>
 </body>
