@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+  AFGSU Manager — Questionnaire de satisfaction (page publique, sans compte Grist)
+  Adresse : satisfaction.html?f=<clé du formulaire Grist publié>/<numéro de section>&s=<numéro de session>
+  Le lien et le QR code sont fournis par la page « Session » de l'accueil AFGSU Manager.
+  La réponse est anonyme : seule la session est enregistrée avec les notes et les commentaires.
+  Version : 1.0 — 2026-11-17
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Questionnaire de satisfaction — formation AFGSU</title>
+<style>
+  html{color-scheme:light}
+  body{margin:0;background:#f8fafc;color:#0f172a;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+  h1{font-size:22px;margin:0 0 4px} .sub{color:#64748b;margin:0 0 18px}
+  .q{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .q p{margin:0 0 10px;font-weight:600}
+  .echelle{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .echelle label{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid #e2e8f0;border-radius:10px;padding:8px 2px;cursor:pointer;font-size:13px;color:#64748b}
+  .echelle input{width:22px;height:22px;accent-color:#0f172a}
+  .echelle label:has(input:checked){border-color:#0f172a;background:#f1f5f9;color:#0f172a}
+  .bornes{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-top:6px}
+  textarea,select{width:100%;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font:inherit;background:#fff;color:#0f172a}
+  textarea{min-height:80px}
+  button{width:100%;padding:14px;border:0;border-radius:10px;background:#0f172a;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.6}
+  .msg{padding:12px 14px;border-radius:10px;margin:12px 0} .err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca} .ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Votre avis sur la formation</h1>
+  <p class="sub" id="sessionLabel">Chargement…</p>
+  <div id="form" class="hidden">
+    <div class="q" id="choixSession"><p>Votre session</p><select id="selSession"></select></div>
+    <div id="questions"></div>
+    <div class="q"><p>Points forts (facultatif)</p><textarea id="forts" maxlength="2000"></textarea></div>
+    <div class="q"><p>Points à améliorer (facultatif)</p><textarea id="amelio" maxlength="2000"></textarea></div>
+    <div id="msg"></div>
+    <button id="envoyer">Envoyer mon avis</button>
+    <p class="sub" style="margin-top:12px;font-size:13px">Questionnaire anonyme : votre nom n'est pas demandé.</p>
+  </div>
+  <div id="merci" class="hidden"><div class="msg ok"><b>Merci !</b> Votre avis a bien été enregistré.</div></div>
+</main>
+<script>
+var GRIST_URL = 'https://grist.numerique.gouv.fr';
+var Q = [['Note_Contenu', 'Le contenu de la formation répond à mes besoins'],
+         ['Note_Pedagogie', 'Les méthodes pédagogiques (simulation, ateliers) m’ont aidé à apprendre'],
+         ['Note_Formateurs', 'Les formateurs étaient disponibles et clairs'],
+         ['Note_Organisation', 'L’organisation (accueil, horaires, salle, matériel) était satisfaisante'],
+         ['Note_Utilite', 'Je me sens capable d’appliquer ces gestes dans mon activité'],
+         ['Note_Globale', 'Note globale de la formation']];
+var params = new URLSearchParams(location.search), m = /^([A-Za-z0-9_-]+)\/(\d+)$/.exec(params.get('f') || ''), sessionId = +params.get('s') || 0, tableId = 'Satisfaction';
+function $(id){ return document.getElementById(id); }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+function erreur(t){ $('msg').innerHTML = '<div class="msg err">' + esc(t) + '</div>'; }
+$('questions').innerHTML = Q.map(function(q){
+  return '<div class="q"><p>' + esc(q[1]) + '</p><div class="echelle">' + [1,2,3,4,5].map(function(n){
+    return '<label><input type="radio" name="' + q[0] + '" value="' + n + '">' + n + '</label>'; }).join('') +
+    '</div><div class="bornes">' + (q[0] === 'Note_Globale' ? '<span>1 = très insatisfait</span><span>5 = très satisfait</span>' : '<span>1 = pas du tout d’accord</span><span>5 = tout à fait d’accord</span>') + '</div></div>'; }).join('');
+if (!m) { $('sessionLabel').textContent = 'Lien incomplet : demandez le QR code à votre formateur.'; }
+else fetch(GRIST_URL + '/api/s/' + m[1] + '/forms/' + m[2]).then(function(r){
+  if (!r.ok) throw new Error(r.status === 404 ? 'ce questionnaire n’est plus disponible' : 'réponse ' + r.status);
+  return r.json();
+}).then(function(form){
+  tableId = form.formTableId || tableId;
+  var sessions = [];
+  Object.keys(form.formFieldsById || {}).forEach(function(k){ var f = form.formFieldsById[k]; if (f.colId === 'Session') sessions = f.refValues || []; });
+  var s = sessions.filter(function(x){ return x[0] === sessionId; })[0];
+  if (s){ $('sessionLabel').textContent = 'Session : ' + s[1]; $('choixSession').classList.add('hidden'); }
+  else { sessionId = 0; $('sessionLabel').textContent = 'Choisissez votre session puis répondez aux questions.';
+    $('selSession').innerHTML = '<option value="">Choisir…</option>' + sessions.slice().reverse().map(function(x){ return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join(''); }
+  $('form').classList.remove('hidden');
+}).catch(function(e){ $('sessionLabel').textContent = 'Questionnaire indisponible : ' + e.message + '.'; });
+$('envoyer').addEventListener('click', function(){
+  var sid = sessionId || +$('selSession').value, rec = { Session:sid }, manque = [];
+  if (!sid) return erreur('Choisissez votre session.');
+  Q.forEach(function(q){ var c = document.querySelector('input[name="' + q[0] + '"]:checked'); if (c) rec[q[0]] = c.value; else manque.push(q[1]); });
+  if (manque.length) return erreur('Merci de répondre à toutes les questions notées (' + manque.length + ' sans réponse).');
+  if ($('forts').value.trim()) rec.Points_Forts = $('forts').value.trim();
+  if ($('amelio').value.trim()) rec.Ameliorations = $('amelio').value.trim();
+  $('envoyer').disabled = true; $('msg').innerHTML = '';
+  fetch(GRIST_URL + '/api/s/' + m[1] + '/tables/' + tableId + '/records', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ records:[{ fields:rec }] }) })
+    .then(function(r){ if (!r.ok) throw new Error('enregistrement impossible (' + r.status + ')'); $('form').classList.add('hidden'); $('merci').classList.remove('hidden'); })
+    .catch(function(e){ $('envoyer').disabled = false; erreur('Erreur : ' + e.message + '. Réessayez dans un instant.'); });
+});
+</script>
+</body>
+</html>

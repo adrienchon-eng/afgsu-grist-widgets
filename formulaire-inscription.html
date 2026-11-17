@@ -73,10 +73,10 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 <div id="app">
 <div id="msg-saved" class="saved">Inscrit avec succes.</div>
 <div id="msg-error" class="error">Erreur.</div>
-<div class="hint" style="margin-bottom:8px;">Tous les champs sont obligatoires, sauf "Nom marital" et "Notes".</div>
+<div class="hint" style="margin-bottom:8px;">Tous les champs sont obligatoires, sauf le téléphone et les notes.</div>
 <h3>Identite</h3>
 <div class="row2">
-<div class="field"><label>Nom</label><input id="f-nom" type="text" /></div>
+<div class="field"><label>Nom de naissance</label><input id="f-nom" type="text" /></div>
 <div class="field"><label>Prenom</label><input id="f-prenom" type="text" /></div>
 </div>
 <div class="selected-badge" id="match-badge" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">
@@ -84,8 +84,8 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
   <button type="button" id="match-clear">&times;</button>
 </div>
 <div class="row2">
-<div class="field"><label>Nom marital (facultatif)</label><input id="f-nom-marital" type="text" /></div>
-<div class="field"><label>Sexe</label><select id="f-sexe"><option value="">--</option><option value="M">M</option><option value="F">F</option></select></div>
+<input id="f-nom-marital" type="hidden" value="" />
+<div class="field"><label>Sexe</label><select id="f-sexe"><option value="">--</option><option value="F">Femme</option><option value="M">Homme</option><option value="Indéterminé">Indéterminé</option></select></div>
 </div>
 <div class="row2">
 <div class="field"><label>Date de naissance</label><input id="f-date-naissance" type="date" /></div>
@@ -138,8 +138,8 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 
 <h3>Contact</h3>
 <div class="row2">
-<div class="field"><label>Email</label><input id="f-email" type="text" inputmode="email" autocomplete="off" placeholder="nom@domaine.fr" /><div class="field-error" id="err-email">Format invalide. Exemple attendu : nom@domaine.fr</div></div>
-<div class="field"><label>Telephone</label><input id="f-telephone" type="tel" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="10 chiffres, ex. 0612345678" /><div class="field-error" id="err-telephone">Le numero doit comporter exactement 10 chiffres.</div></div>
+<div class="field"><label>Adresse e-mail</label><div class="hint" style="margin:-2px 0 6px">Adresse personnelle ou professionnelle, au choix. Vous y recevrez votre attestation et les rappels avant la date de recyclage : choisissez une adresse que vous consultez et que vous garderez, même en cas de mutation.</div><input id="f-email" type="text" inputmode="email" autocomplete="off" placeholder="nom@domaine.fr" /><div class="field-error" id="err-email">Format invalide. Exemple attendu : nom@domaine.fr</div></div>
+<div class="field"><label>Téléphone (facultatif)</label><input id="f-telephone" type="tel" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="10 chiffres, ex. 0612345678" /><div class="field-error" id="err-telephone">Le numero doit comporter exactement 10 chiffres.</div></div>
 </div>
 
 <h3>Formation AFGSU</h3>
@@ -714,8 +714,7 @@ function getMissingFields() {
   if (!selectedFonctionId && !fields.Autre_Fonction.value.trim()) missing.push('Fonction ou Autre fonction');
   if (!fields.Email.value.trim()) missing.push('Email');
   else if (!isValidEmail(fields.Email.value)) missing.push('Email (format invalide, ex. nom@domaine.fr)');
-  if (!fields.Telephone.value.trim()) missing.push('Telephone');
-  else if (!isValidPhone(fields.Telephone.value)) missing.push('Telephone (10 chiffres exactement)');
+  if (fields.Telephone.value.trim() && !isValidPhone(fields.Telephone.value)) missing.push('Telephone (10 chiffres exactement)');
   if (!typeFormationSelect.value) missing.push('Type de formation');
   if (!selectedLieuId && !selectedAutreLieuStructureId) missing.push('Lieu de formation');
   if (!fields.Date_Formation.value) missing.push('Date de la formation');
@@ -833,7 +832,7 @@ btnSave.addEventListener('click', async () => {
   fields.Telephone.value = cleanPhone(fields.Telephone.value);
   fields.Email.value = fields.Email.value.trim();
   refreshEmailState(true);
-  refreshPhoneState(true);
+  refreshPhoneState(false);
 
   const missing = getMissingFields();
   if (missing.length) {
