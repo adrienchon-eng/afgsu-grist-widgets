@@ -167,6 +167,19 @@ input:disabled { background-color: #f3f4f6; color: #9ca3af; cursor: not-allowed;
 let allStructures = [];
 let allFonctions = [];
 let allTypesFormation = [];
+// Ordre d'affichage des formations : AFGSU, formation de formateurs (semaine 1 puis semaine 2), modules SSE, GQS en dernier.
+function rangFormation(t) {
+  const n = String(t || '');
+  if (/GQS|Gestes Qui Sauvent/i.test(n)) return 9;
+  if (/^AFGSU/i.test(n)) return 1;
+  if (/formateur/i.test(n)) return 2;
+  if (/^SSE/i.test(n)) return 3;
+  return 5;
+}
+function trierFormations(list) {
+  return list.map((t, i) => ({ t, i })).sort((a, b) => (rangFormation(a.t.Type) - rangFormation(b.t.Type)) ||
+    (rangFormation(a.t.Type) === 2 || rangFormation(a.t.Type) === 3 ? a.t.Type.localeCompare(b.t.Type, 'fr', { numeric: true }) : a.i - b.i)).map(x => x.t);
+}
 let allLieux = [];
 let allStagiairesCache = [];
 let currentRowId = null;
@@ -782,7 +795,7 @@ async function loadPublic() {
       return { id: v[0], Nom: part(v[1], 0), Categorie: cat[0] || '', Sous_Categorie: cat[1] || '', Code_Postal: cp, Commune: place.slice(cp.length).trim() };
     }).filter(x => x.Nom);
     allFonctions = (refs.Fonction || []).map(v => ({ id: v[0], Fonctions: String(v[1] || '') })).filter(x => x.Fonctions);
-    allTypesFormation = (refs.Formation || []).map(v => ({ id: v[0], Type: String(v[1] || '') })).filter(x => x.Type);
+    allTypesFormation = trierFormations((refs.Formation || []).map(v => ({ id: v[0], Type: String(v[1] || '') })).filter(x => x.Type));
     allLieux = (refs.Lieu || []).filter(v => part(v[1], 2) !== 'inactif').map(v => {
       const place = part(v[1], 1), cp = (/^\d{4,5}/.exec(place) || [''])[0];
       return { id: v[0], Nom_Lieu: part(v[1], 0), Code_Postal: cp, Ville: place.slice(cp.length).trim() };
@@ -949,10 +962,10 @@ async function loadData() {
 
     try {
       const typesTable = await grist.docApi.fetchTable('Types_Formation');
-      allTypesFormation = typesTable.id.map((id, i) => ({
+      allTypesFormation = trierFormations(typesTable.id.map((id, i) => ({
         id,
         Type: typesTable.Type[i]
-      })).filter(t => t.Type);
+      })).filter(t => t.Type));
     } catch (e) {
       allTypesFormation = [];
     }
