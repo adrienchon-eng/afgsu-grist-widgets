@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Candidature formateur AFGSU</title>
+<style>
+/* Formulaire public de candidature formateur — AFGSU Manager.
+   Adresse : formulaire-formateur.html?f=<cle du formulaire Grist publie>/<numero de section>
+   Les listes (sites, unites, fonctions) viennent du formulaire Grist publie « Candidature formateur » ;
+   la demande est deposee dans Candidatures_Formateurs et acceptee ensuite dans AFGSU Manager (Formateurs).
+   Aucune donnee personnelle du document n'est lue. Version 1.0 — 2026-11-19. */
+html { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Inter, system-ui, -apple-system, sans-serif; background: #f6f7f9; color: #1f2937; padding: 16px; }
+main { max-width: 640px; margin: 0 auto; }
+header { margin-bottom: 14px; }
+header h1 { font-size: 20px; line-height: 1.3; }
+header p { font-size: 13px; color: #4b5563; margin-top: 6px; line-height: 1.45; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+h2 { font-size: 12px; font-weight: 700; color: #0f766e; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
+.field { margin-bottom: 14px; position: relative; }
+.field:last-child { margin-bottom: 0; }
+label { display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+.req { color: #b91c1c; }
+input:not([type=checkbox]), select { width: 100%; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; font-size: 16px; color: #1f2937; appearance: none; }
+select { background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 32px; }
+input:focus, select:focus { outline: none; border-color: #0f766e; box-shadow: 0 0 0 3px rgba(15,118,110,.15); }
+input.invalid, select.invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+.hint { font-size: 12px; color: #6b7280; margin-top: 5px; line-height: 1.4; }
+.err { font-size: 12px; color: #b91c1c; margin-top: 5px; display: none; }
+.err.show { display: block; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } body { padding: 10px; } }
+.ac { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: #fff; border: 1px solid #d1d5db; border-radius: 0 0 8px 8px; box-shadow: 0 10px 20px rgba(0,0,0,.08); max-height: 260px; overflow-y: auto; display: none; }
+.ac div { padding: 10px 12px; font-size: 14px; border-top: 1px solid #f0f1f3; cursor: pointer; }
+.ac div:first-child { border-top: none; }
+.ac div:hover, .ac div.on { background: #eef8f7; }
+.ac small { display: block; font-size: 12px; color: #9ca3af; }
+.chosen { display: none; margin-top: 6px; font-size: 13px; color: #065f46; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px 10px; }
+.chosen button { border: 0; background: none; color: #065f46; text-decoration: underline; cursor: pointer; font-size: 13px; margin-left: 6px; }
+.or { font-size: 12px; color: #6b7280; margin: -4px 0 8px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.check input { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: #0f766e; }
+.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+.alert { display: none; margin-bottom: 14px; padding: 10px 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 14px; color: #991b1b; font-weight: 600; }
+button.pri { width: 100%; padding: 14px; border: 0; border-radius: 10px; background: #0f766e; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+button.pri:disabled { opacity: .6; cursor: wait; }
+#loading { text-align: center; color: #6b7280; padding: 30px 10px; font-size: 14px; }
+#app, #done { display: none; }
+#done { text-align: center; padding: 30px 12px; }
+#done .ok { font-size: 44px; color: #15803d; }
+#done h1 { font-size: 19px; color: #166534; margin: 8px 0 12px; }
+#done p, #done li { font-size: 14px; color: #374151; line-height: 1.5; }
+#done ol { text-align: left; margin: 14px auto 0; max-width: 480px; padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <div id="loading">Chargement du formulaire…</div>
+
+  <div id="app">
+    <header>
+      <h1>Candidature formateur AFGSU</h1>
+      <p>Ces informations créent votre fiche de formateur dans AFGSU Manager. Après validation par la coordination, vous recevrez une invitation pour vous connecter à l’application.</p>
+    </header>
+    <div class="alert" id="alert"></div>
+
+    <section class="card">
+      <h2>Identité</h2>
+      <div class="row2">
+        <div class="field"><label for="nom">Nom <span class="req">*</span></label><input id="nom" autocomplete="family-name" /></div>
+        <div class="field"><label for="prenom">Prénom <span class="req">*</span></label><input id="prenom" autocomplete="given-name" /></div>
+      </div>
+      <div class="field">
+        <label for="email">Adresse e-mail professionnelle <span class="req">*</span></label>
+        <input id="email" type="email" inputmode="email" autocomplete="off" placeholder="prenom.nom@intradef.gouv.fr" />
+        <div class="err" id="email-err">Adresse professionnelle obligatoire (se terminant par « .gouv.fr », en général @intradef.gouv.fr). Une adresse personnelle (gmail, orange, hotmail…) ne permet pas de se connecter à Grist.</div>
+        <div class="hint">C’est avec cette adresse que vous vous connecterez à l’application.</div>
+      </div>
+      <div class="field"><label for="tel">Téléphone</label><input id="tel" type="tel" inputmode="tel" autocomplete="off" placeholder="10 chiffres" /></div>
+    </section>
+
+    <section class="card">
+      <h2>Grade, fonction et affectation</h2>
+      <div class="field"><label for="grade">Grade <span class="req">*</span></label><input id="grade" placeholder="ex. infirmier en soins généraux, sergent, capitaine…" /></div>
+      <div class="field">
+        <label for="fonction">Fonction</label>
+        <input id="fonction" autocomplete="off" placeholder="Tapez quelques lettres : IDE, IADE, médecin…" />
+        <div class="ac" id="fonction-ac"></div>
+        <div class="chosen" id="fonction-ok"></div>
+      </div>
+      <div class="field">
+        <label for="unite">Unité d’affectation</label>
+        <input id="unite" autocomplete="off" placeholder="Tapez le nom, la ville ou le code postal" />
+        <div class="ac" id="unite-ac"></div>
+        <div class="chosen" id="unite-ok"></div>
+      </div>
+      <p class="or">Unité absente de la liste ? Saisissez-la ci-dessous (l’un ou l’autre).</p>
+      <div class="field"><label for="autre">Autre affectation</label><input id="autre" placeholder="Nom de l’unité, ville" /></div>
+      <div class="field">
+        <label for="site">Site où vous intervenez comme formateur <span class="req">*</span></label>
+        <select id="site"><option value="">— Choisir —</option></select>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Habilitation de formateur</h2>
+      <div class="field"><label for="diplome">N° de diplôme</label><input id="diplome" placeholder="Facultatif" /></div>
+      <div class="row2">
+        <div class="field"><label for="hab">Date d’habilitation</label><input id="hab" type="date" /></div>
+        <div class="field"><label for="fin">Fin de validité</label><input id="fin" type="date" /></div>
+      </div>
+      <div class="hint">Formation de formateurs en cours ? Laissez vide : la date sera renseignée après validation.</div>
+    </section>
+
+    <section class="card">
+      <label class="check"><input type="checkbox" id="atteste" /> <span>J’atteste l’exactitude de ces informations. <span class="req">*</span></span></label>
+    </section>
+
+    <button class="pri" id="envoyer">Envoyer ma candidature</button>
+    <p class="hint" style="text-align:center;margin:10px 0 24px">Les champs marqués <span class="req">*</span> sont obligatoires.</p>
+  </div>
+
+  <div id="done">
+    <div class="ok">✓</div>
+    <h1>Candidature envoyée</h1>
+    <p id="done-txt"></p>
+    <ol>
+      <li>La coordination valide votre demande.</li>
+      <li>Vous recevez de Grist (grist.numerique.gouv.fr) une invitation à votre adresse professionnelle.</li>
+      <li><b>Première connexion : depuis un poste relié à l’intradef</b>, avec votre adresse professionnelle. Elle ne fonctionne pas avec une adresse personnelle.</li>
+      <li>Dans l’application, menu « Mon dossier » : vérifiez et complétez vos informations.</li>
+    </ol>
+  </div>
+</main>
+<script>
+const GRIST_URL = 'https://grist.numerique.gouv.fr';
+const FORM = (function () { const m = /[?&]f=([A-Za-z0-9_-]+)\/(\d+)/.exec(location.search); return m ? { key: m[1], vs: m[2] } : null; })();
+let tableId = 'Candidatures_Formateurs', unites = [], fonctions = [], lieux = [], uniteId = null, fonctionId = null;
+const $ = id => document.getElementById(id);
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const part = (label, i) => String(label == null ? '' : label).split(' | ')[i] || '';
+
+// Nom de site court et reconnaissable (les listes Grist portent le nom administratif complet).
+function siteCourt(n) {
+  if (/SITE EVDG/i.test(n) || /^ECOLE\s+DU VAL DE GRACE/i.test(n)) return 'École du Val-de-Grâce (EVDG)';
+  let c = n.replace(/^HOPITAL (NATIONAL |REGIONAL )?D'INSTRUCTION DES ARMEES\s*/i, 'HIA ').replace(/^HOPITAL SPECIALISE DES ARMEES\s*(-\s*SITE\s*)?/i, 'HIA ');
+  if (c === n) return n.charAt(0) + n.slice(1).toLowerCase();
+  return c.split(' ').map((w, i) => i === 0 ? w : w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+}
+
+function autocomplete(input, list, getLabel, getSub, onPick) {
+  let items = [], on = -1;
+  const box = $(input.id + '-ac');
+  function render() {
+    box.innerHTML = items.map((x, i) => '<div data-i="' + i + '" class="' + (i === on ? 'on' : '') + '">' + esc(getLabel(x)) + (getSub(x) ? '<small>' + esc(getSub(x)) + '</small>' : '') + '</div>').join('');
+    box.style.display = items.length ? 'block' : 'none';
+  }
+  input.addEventListener('input', () => {
+    const t = norm(input.value).trim(); on = -1;
+    if (t.length < 2) { items = []; return render(); }
+    const mots = t.split(/\s+/);
+    items = list().filter(x => { const s = norm(getLabel(x) + ' ' + getSub(x)); return mots.every(m => s.indexOf(m) >= 0); }).slice(0, 30);
+    render();
+  });
+  input.addEventListener('keydown', e => {
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { on = Math.min(on + 1, items.length - 1); render(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { on = Math.max(on - 1, 0); render(); e.preventDefault(); }
+    else if (e.key === 'Enter' && on >= 0) { e.preventDefault(); pick(items[on]); }
+  });
+  box.addEventListener('mousedown', e => { const d = e.target.closest('[data-i]'); if (d) { e.preventDefault(); pick(items[+d.dataset.i]); } });
+  input.addEventListener('blur', () => setTimeout(() => { box.style.display = 'none'; }, 150));
+  function pick(x) { items = []; render(); onPick(x); }
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function choisirUnite(u) {
+  uniteId = u ? u.id : null;
+  $('unite').value = ''; $('unite').style.display = u ? 'none' : '';
+  $('unite-ok').style.display = u ? 'block' : 'none';
+  $('unite-ok').innerHTML = u ? '✓ ' + esc(u.Nom) + ' <button type="button" id="unite-x">changer</button>' : '';
+  if (u) { $('autre').value = ''; $('unite-x').onclick = () => choisirUnite(null); }
+}
+function choisirFonction(f) {
+  fonctionId = f ? f.id : null;
+  $('fonction').value = ''; $('fonction').style.display = f ? 'none' : '';
+  $('fonction-ok').style.display = f ? 'block' : 'none';
+  $('fonction-ok').innerHTML = f ? '✓ ' + esc(f.nom) + ' <button type="button" id="fonction-x">changer</button>' : '';
+  if (f) $('fonction-x').onclick = () => choisirFonction(null);
+}
+// Exclusivite : une unite du referentiel OU une affectation libre, jamais les deux.
+$('autre').addEventListener('input', () => { if ($('autre').value.trim() && uniteId) choisirUnite(null); });
+
+function emailPro(v) { return /^[^@\s]+@([a-z0-9-]+\.)*gouv\.fr$/i.test(String(v).trim()); }
+$('email').addEventListener('blur', () => { const v = $('email').value.trim(), bad = v && !emailPro(v); $('email').classList.toggle('invalid', !!bad); $('email-err').classList.toggle('show', !!bad); });
+
+async function charger() {
+  if (!FORM) { $('loading').textContent = 'Lien incomplet : demandez le QR code ou le lien de candidature à la coordination.'; return; }
+  try {
+    const r = await fetch(GRIST_URL + '/api/s/' + FORM.key + '/forms/' + FORM.vs);
+    if (!r.ok) throw new Error(r.status === 404 ? 'ce lien n’est plus valide' : 'réponse ' + r.status);
+    const form = await r.json();
+    tableId = form.formTableId || tableId;
+    const refs = {};
+    Object.values(form.formFieldsById || {}).forEach(f => { refs[f.colId] = f.refValues || []; });
+    unites = (refs.Unite || []).map(v => ({ id: v[0], Nom: part(v[1], 0), sub: [part(v[1], 2), part(v[1], 1)].filter(Boolean).join(' · ') })).filter(x => x.Nom);
+    fonctions = (refs.Fonction || []).map(v => ({ id: v[0], nom: String(v[1] || '') })).filter(x => x.nom);
+    lieux = (refs.Lieu || []).filter(v => part(v[1], 2) !== 'inactif').map(v => ({ id: v[0], nom: part(v[1], 0), court: siteCourt(part(v[1], 0)), ville: part(v[1], 1) }))
+      .sort((a, b) => (b.court.indexOf('École du Val') === 0) - (a.court.indexOf('École du Val') === 0) || a.court.localeCompare(b.court, 'fr'));
+    $('site').innerHTML = '<option value="">— Choisir —</option>' + lieux.map(l => '<option value="' + l.id + '">' + esc(l.court) + (l.ville ? ' — ' + esc(l.ville) : '') + '</option>').join('');
+    autocomplete($('unite'), () => unites, u => u.Nom, u => u.sub, choisirUnite);
+    autocomplete($('fonction'), () => fonctions, f => f.nom, () => '', choisirFonction);
+    $('loading').style.display = 'none'; $('app').style.display = 'block';
+  } catch (e) { $('loading').textContent = 'Formulaire indisponible : ' + e.message + '. Signalez-le à la coordination.'; }
+}
+
+function alerte(t) { const a = $('alert'); a.textContent = t; a.style.display = t ? 'block' : 'none'; if (t) a.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+$('envoyer').addEventListener('click', async () => {
+  const v = id => $(id).value.trim(), manque = [];
+  ['nom', 'prenom', 'email', 'grade', 'site'].forEach(id => $(id).classList.toggle('invalid', !v(id)));
+  if (!v('nom')) manque.push('nom'); if (!v('prenom')) manque.push('prénom');
+  if (!v('email')) manque.push('e-mail'); else if (!emailPro(v('email'))) { manque.push('e-mail professionnel (.gouv.fr)'); $('email').classList.add('invalid'); $('email-err').classList.add('show'); }
+  if (!v('grade')) manque.push('grade'); if (!v('site')) manque.push('site');
+  if (v('hab') && v('fin') && v('fin') <= v('hab')) manque.push('fin de validité postérieure à la date d’habilitation');
+  if (!$('atteste').checked) manque.push('attestation d’exactitude');
+  if (manque.length) return alerte('À compléter : ' + manque.join(', ') + '.');
+  alerte('');
+  const autre = v('autre'), fAutre = !fonctionId ? v('fonction') : '';
+  const rec = { Nom: v('nom').toUpperCase(), Prenom: v('prenom'), Email: v('email').toLowerCase(), Telephone: v('tel').replace(/[^\d+]/g, ''),
+    Grade: v('grade'), Fonction: fonctionId, Autre_Fonction: fAutre, Unite: autre ? null : uniteId, Autre_Affectation: autre,
+    Lieu: +v('site'), Numero_Diplome: v('diplome'), Date_Habilitation: v('hab'), Date_Fin_Habilitation: v('fin'), Attestation: true };
+  Object.keys(rec).forEach(k => { if (rec[k] === null || rec[k] === '') delete rec[k]; });
+  $('envoyer').disabled = true;
+  try {
+    const r = await fetch(GRIST_URL + '/api/s/' + FORM.key + '/tables/' + tableId + '/records', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: [{ fields: rec }] }) });
+    if (!r.ok) { let d = ''; try { d = (await r.json()).error || ''; } catch (e) {} throw new Error('envoi refusé (' + r.status + (d ? ' : ' + d : '') + ')'); }
+    const l = lieux.find(x => x.id === rec.Lieu);
+    $('done-txt').textContent = rec.Prenom + ' ' + rec.Nom + (l ? ' — ' + l.court : '') + '.';
+    $('app').style.display = 'none'; $('done').style.display = 'block'; window.scrollTo(0, 0);
+  } catch (e) { alerte('Erreur : ' + e.message + '. Réessayez ou signalez-le à la coordination.'); }
+  $('envoyer').disabled = false;
+});
+charger();
+</script>
+</body>
+</html>
