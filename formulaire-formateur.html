@@ -9,7 +9,7 @@
    Adresse : formulaire-formateur.html?f=<cle du formulaire Grist publie>/<numero de section>
    Les listes (sites, unites, fonctions) viennent du formulaire Grist publie « Candidature formateur » ;
    la demande est deposee dans Candidatures_Formateurs et acceptee ensuite dans AFGSU Manager (Formateurs).
-   Aucune donnee personnelle du document n'est lue. Version 1.0 — 2026-11-19. */
+   Aucune donnee personnelle du document n'est lue. Version 1.1 — 2026-11-22 (noms des sites = noms des lieux de formation). */
 html { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Inter, system-ui, -apple-system, sans-serif; background: #f6f7f9; color: #1f2937; padding: 16px; }
@@ -143,12 +143,8 @@ const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLow
 const part = (label, i) => String(label == null ? '' : label).split(' | ')[i] || '';
 
 // Nom de site court et reconnaissable (les listes Grist portent le nom administratif complet).
-function siteCourt(n) {
-  if (/SITE EVDG/i.test(n) || /^ECOLE\s+DU VAL DE GRACE/i.test(n)) return 'École du Val-de-Grâce (EVDG)';
-  let c = n.replace(/^HOPITAL (NATIONAL |REGIONAL )?D'INSTRUCTION DES ARMEES\s*/i, 'HIA ').replace(/^HOPITAL SPECIALISE DES ARMEES\s*(-\s*SITE\s*)?/i, 'HIA ');
-  if (c === n) return n.charAt(0) + n.slice(1).toLowerCase();
-  return c.split(' ').map((w, i) => i === 0 ? w : w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
-}
+// Nom du site tel qu'il figure dans « Lieux de formation » (denomination a jour).
+function siteCourt(n) { return n; }
 
 function autocomplete(input, list, getLabel, getSub, onPick) {
   let items = [], on = -1;
@@ -208,7 +204,7 @@ async function charger() {
     unites = (refs.Unite || []).map(v => ({ id: v[0], Nom: part(v[1], 0), sub: [part(v[1], 2), part(v[1], 1)].filter(Boolean).join(' · ') })).filter(x => x.Nom);
     fonctions = (refs.Fonction || []).map(v => ({ id: v[0], nom: String(v[1] || '') })).filter(x => x.nom);
     lieux = (refs.Lieu || []).filter(v => part(v[1], 2) !== 'inactif').map(v => ({ id: v[0], nom: part(v[1], 0), court: siteCourt(part(v[1], 0)), ville: part(v[1], 1) }))
-      .sort((a, b) => (b.court.indexOf('École du Val') === 0) - (a.court.indexOf('École du Val') === 0) || a.court.localeCompare(b.court, 'fr'));
+      .sort((a, b) => a.court.localeCompare(b.court, 'fr'));
     $('site').innerHTML = '<option value="">— Choisir —</option>' + lieux.map(l => '<option value="' + l.id + '">' + esc(l.court) + (l.ville ? ' — ' + esc(l.ville) : '') + '</option>').join('');
     autocomplete($('unite'), () => unites, u => u.Nom, u => u.sub, choisirUnite);
     autocomplete($('fonction'), () => fonctions, f => f.nom, () => '', choisirFonction);
